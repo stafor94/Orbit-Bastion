@@ -31,7 +31,6 @@
       researchIconSvg,
       getOpenBaseScreen,
       resetStage,
-      initPyodideWaves,
       playSound,
       difficultyProgressKey,
       applyTowerUpgrade,
@@ -197,7 +196,6 @@
         setResearchPoints(researchPoints() + refund);
         saveResearchLevels(levels);
         resetStage(state.stageIndex);
-        initPyodideWaves();
         openResearchScreen();
       };
       if (window.OrbitDialogs?.confirmResearchReset) {
@@ -356,7 +354,6 @@
       state.lastResearchPurchased = id;
       state.lastResearchPulseUntil = Date.now() + 1800;
       resetStage(state.stageIndex);
-      initPyodideWaves();
       openResearchScreen();
     }
 
@@ -427,13 +424,11 @@
     `;
       ui.overlay.querySelector("#resultRetryButton").addEventListener("click", () => {
         resetStage(state.stageIndex);
-        initPyodideWaves();
         closeOverlay();
       });
       ui.overlay.querySelector("#resultBaseButton").addEventListener("click", () => {
         const next = victory ? Math.min(state.stageIndex + 1, STAGES.length - 1) : state.stageIndex;
         resetStage(next);
-        initPyodideWaves();
         getOpenBaseScreen()();
       });
       if (unlockedDifficultyId && window.OrbitDialogs?.showDifficultyUnlock) {
@@ -455,7 +450,6 @@
             state.difficultyLocked = false;
             state.stageIndex = 0;
             resetStage(0);
-            initPyodideWaves();
             getOpenBaseScreen()();
             playSound("boom");
           },
