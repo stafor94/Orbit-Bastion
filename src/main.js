@@ -1797,13 +1797,12 @@
     const fractureBoost = enemy.fracturedTimer > 0 ? 1.15 : 1;
     const bossBoost = def.boss && tower ? 1 + (research.bossBreaker || 0) * 0.08 : 1;
     const markedBoost = enemy.markedTimer > 0 ? 1.3 : 1;
-    const armorPenalty = Math.max(0.08, 0.35 - (research.armorPierce || 0) * 0.045);
+    const armorPenalty = Math.max(0.08, 1 - (research.armorPierce || 0) * 0.13);
     const effectiveArmorPenalty = tower?.type === "rail" && tower.branch === "breach" ? armorPenalty * 0.22 : armorPenalty;
     const actual = Math.max(1, amount * fractureBoost * bossBoost * markedBoost - armor * effectiveArmorPenalty);
     enemy.hp -= actual;
     queueDamageNumber(enemy, actual);
     if (enemy.hp <= 0 && !enemy.dead) {
-      showDamageNumber(enemy, true);
       enemy.dead = true;
       if (enemy.type === "broodcarrier") createBroodCocoon(enemy);
       if (tower) tower.kills += 1;
@@ -1822,21 +1821,10 @@
   }
 
   function queueDamageNumber(enemy, amount) {
-    enemy.damageTextTotal = (enemy.damageTextTotal || 0) + amount;
-    const threshold = ENEMY_DEFS[enemy.type].boss ? 32 : 10;
-    const due = state.time >= (enemy.nextDamageTextAt || 0);
-    if (amount >= threshold || enemy.damageTextTotal >= threshold || (due && enemy.damageTextTotal >= 6)) {
-      showDamageNumber(enemy, false);
-    }
-  }
-
-  function showDamageNumber(enemy, force) {
-    const total = enemy.damageTextTotal || 0;
-    if (!force && total <= 0) return;
-    if (force && total < 1) return;
-    floatingText(enemy.x, enemy.y - enemy.radius - 8, formatDamage(total), total >= 30 ? "#fff3b0" : "#ffffff");
-    enemy.damageTextTotal = 0;
-    enemy.nextDamageTextAt = state.time + 0.38 + Math.random() * 0.1;
+    if (amount <= 0) return;
+    const jitterX = (Math.random() - 0.5) * 14;
+    const jitterY = -enemy.radius - 8 - Math.random() * 8;
+    floatingText(enemy.x + jitterX, enemy.y + jitterY, formatDamage(amount), amount >= 30 ? "#fff3b0" : "#ffffff");
   }
 
   function formatDamage(value) {
