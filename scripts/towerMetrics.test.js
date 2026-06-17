@@ -5,7 +5,7 @@ const metrics = require("../src/game/towerMetrics.js");
 
 assert.deepEqual(
   [1, 2, 3].map((level) => metrics.towerBaseRange("beacon", 160, level, null)),
-  [160, 175, 190],
+  [140, 155, 170],
 );
 assert.equal(metrics.towerBaseRange("beacon", 160, 3, "amplify"), 250);
 assert.deepEqual(

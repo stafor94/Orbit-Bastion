@@ -301,6 +301,29 @@
         { wave: 6, type: "brute", count: 2, gap: 0.9 },
       ],
     },
+    {
+      summary: "하이브 외곽 차단선에서 강화된 혼성 군단이 다중 구역을 압박합니다.",
+      rule: "혼성 공세 증폭",
+      group: { swarming: 1.5, skitter: 1.45, brute: 1.35, lurker: 1.3 },
+      hp: { lurker: 1.12, skitter: 1.18, brute: 1.28, colossus: 1.45 },
+      bossCooldown: 0.66,
+      extraGroups: [
+        { wave: 4, type: "skitter", count: 8, gap: 0.24 },
+        { wave: 7, type: "brute", count: 2, gap: 0.85 },
+      ],
+    },
+    {
+      summary: "군락 심장실에서 모든 개체와 중무장 파동이 연속 투입됩니다.",
+      rule: "최종 붕괴 전선",
+      group: { swarming: 1.65, skitter: 1.5, brute: 1.55, lurker: 1.35 },
+      hp: { lurker: 1.2, skitter: 1.22, brute: 1.4, colossus: 1.55 },
+      bossCooldown: 0.58,
+      extraGroups: [
+        { wave: 3, type: "swarming", count: 12, gap: 0.14 },
+        { wave: 6, type: "brute", count: 3, gap: 0.82 },
+        { wave: 9, type: "skitter", count: 10, gap: 0.22 },
+      ],
+    },
   ];
 
   const RESEARCH_DEFS = [
