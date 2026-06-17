@@ -69,6 +69,9 @@
     stageIndex: 0,
     core: 20,
     maxCore: 20,
+    coreShield: 0,
+    coreShieldMax: 0,
+    coreShieldTimer: 0,
     alloy: 0,
     waveIndex: 0,
     waveActive: false,
@@ -819,6 +822,9 @@
     state.researchLevels = research;
     state.core = stage.core + research.core * 2;
     state.maxCore = state.core;
+    state.coreShieldMax = research.fortress || 0;
+    state.coreShield = state.coreShieldMax;
+    state.coreShieldTimer = 0;
     state.alloy = stage.alloy + research.alloy * 25;
     state.waveIndex = 0;
     state.waveActive = false;
@@ -1303,6 +1309,7 @@
     }
     state.time += dt;
     state.shock = Math.max(0, state.shock - dt * 1.8);
+    updateCoreShield(dt);
     spawnTick(dt);
     updateEnemies(dt);
     updateTowers(dt);
@@ -1436,19 +1443,25 @@
       }
 
       if (enemy.progress >= state.pathLength) {
-        const research = currentResearchLevels();
-        const leakDamage = def.boss ? Math.max(1, 8 - (research.fortress || 0)) : 1;
+        const leakDamage = def.boss ? 8 : 1;
         enemy.dead = true;
-        state.core -= leakDamage;
-        state.shock = 1;
-        floatingText(state.width - 28, state.height - 32, `코어 -${leakDamage}`, "#ff5e6c");
-        updateUI();
-        if (state.core <= 0) {
-          state.core = 0;
-          state.gameOver = true;
-          showBanner("방어선 붕괴", "코어가 파괴되었습니다. 타워 배치를 재정비하세요.");
-          openResultScreen(false);
+        if (state.coreShield > 0) {
+          state.coreShield -= 1;
+          state.coreShieldTimer = 0;
+          state.shock = 0.45;
+          floatingText(state.width - 28, state.height - 32, "쉴드 방어", "#72f7ff");
+        } else {
+          state.core -= leakDamage;
+          state.shock = 1;
+          floatingText(state.width - 28, state.height - 32, `코어 -${leakDamage}`, "#ff5e6c");
+          if (state.core <= 0) {
+            state.core = 0;
+            state.gameOver = true;
+            showBanner("방어선 붕괴", "코어가 파괴되었습니다. 타워 배치를 재정비하세요.");
+            openResultScreen(false);
+          }
         }
+        updateUI();
       }
     }
     updateEnemyGuardAuras();
@@ -1790,6 +1803,17 @@
 
 
 
+  function updateCoreShield(dt) {
+    if (state.coreShieldMax <= 0 || state.coreShield >= state.coreShieldMax) return;
+    state.coreShieldTimer += dt;
+    if (state.coreShieldTimer >= 5) {
+      const restored = Math.floor(state.coreShieldTimer / 5);
+      state.coreShield = Math.min(state.coreShieldMax, state.coreShield + restored);
+      state.coreShieldTimer %= 5;
+      updateUI();
+    }
+  }
+
   function dealDamage(enemy, amount, tower) {
     const def = ENEMY_DEFS[enemy.type];
     const armor = enemyArmorValue(def) + (enemy.guardedTimer > 0 ? enemy.guardArmor || 0 : 0);
@@ -1797,9 +1821,10 @@
     const fractureBoost = enemy.fracturedTimer > 0 ? 1.15 : 1;
     const bossBoost = def.boss && tower ? 1 + (research.bossBreaker || 0) * 0.08 : 1;
     const markedBoost = enemy.markedTimer > 0 ? 1.3 : 1;
-    const armorPenalty = Math.max(0.08, 1 - (research.armorPierce || 0) * 0.13);
-    const effectiveArmorPenalty = tower?.type === "rail" && tower.branch === "breach" ? armorPenalty * 0.22 : armorPenalty;
-    const actual = Math.max(1, amount * fractureBoost * bossBoost * markedBoost - armor * effectiveArmorPenalty);
+    const armorReduction = (research.armorPierce || 0) * 2;
+    const effectiveArmor = Math.max(0, armor - armorReduction);
+    const finalArmor = tower?.type === "rail" && tower.branch === "breach" ? effectiveArmor * 0.22 : effectiveArmor;
+    const actual = Math.max(1, amount * fractureBoost * bossBoost * markedBoost - finalArmor);
     enemy.hp -= actual;
     queueDamageNumber(enemy, actual);
     if (enemy.hp <= 0 && !enemy.dead) {
