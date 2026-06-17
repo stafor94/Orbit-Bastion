@@ -890,22 +890,25 @@
   }
 
   function difficultyArmorBonus(difficultyId = state.difficulty) {
-    if (difficultyId === "hell") return 1;
-    if (difficultyId === "nightmare") return 2;
-    return 0;
+    const bonuses = {
+      normal: 1,
+      hard: 3,
+      hell: 5,
+      nightmare: 10,
+    };
+    return bonuses[difficultyId] || 0;
   }
 
   function enemyArmorValue(typeOrDef, difficultyId = state.difficulty) {
     const def = typeof typeOrDef === "string" ? ENEMY_DEFS[typeOrDef] : typeOrDef;
     const baseArmor = def?.armor || 0;
-    if (baseArmor <= 0) return 0;
     return baseArmor + difficultyArmorBonus(difficultyId);
   }
 
   function spawnEnemy(type, options = {}) {
     const def = ENEMY_DEFS[type];
     const difficulty = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS.easy;
-    const hpScale = (1 + state.stageIndex * 0.13 + state.waveIndex * 0.035) * difficulty.hp * stageEnemyHpScale(type);
+    const hpScale = difficulty.hp * stageEnemyHpScale(type);
     const enemy = {
       type,
       hp: options.hp ?? def.hp * hpScale,
@@ -932,6 +935,9 @@
       phase: Math.random() * 10,
       hatchTimer: options.hatchTimer ?? 0,
       sourceType: options.sourceType || null,
+      guardedTimer: 0,
+      guardArmor: 0,
+      enraged: false,
       dead: false,
     };
     placeOnPath(enemy);
@@ -1342,6 +1348,27 @@
     if (state.currentGroup.remaining <= 0) state.currentGroup = null;
   }
 
+  function updateEnemyGuardAuras() {
+    for (const enemy of state.enemies) {
+      enemy.guardedTimer = 0;
+      enemy.guardArmor = 0;
+    }
+    const guards = state.enemies.filter((enemy) => !enemy.dead && ENEMY_DEFS[enemy.type]?.guardAura);
+    for (const guard of guards) {
+      const aura = ENEMY_DEFS[guard.type].guardAura;
+      const radius2 = aura.radius * aura.radius;
+      for (const ally of state.enemies) {
+        if (ally.dead || ally === guard || ENEMY_DEFS[ally.type]?.boss) continue;
+        const dx = ally.x - guard.x;
+        const dy = ally.y - guard.y;
+        if (dx * dx + dy * dy <= radius2) {
+          ally.guardedTimer = 0.2;
+          ally.guardArmor = Math.max(ally.guardArmor || 0, aura.armor);
+        }
+      }
+    }
+  }
+
   function updateEnemies(dt) {
     for (const enemy of state.enemies) {
       const def = ENEMY_DEFS[enemy.type];
@@ -1352,7 +1379,14 @@
       enemy.fracturedTimer = Math.max(0, (enemy.fracturedTimer || 0) - dt);
       enemy.markedTimer = Math.max(0, (enemy.markedTimer || 0) - dt);
       if (enemy.slowTimer <= 0) enemy.slowFactor = 1;
-      const motionFactor = enemy.stunTimer > 0 ? 0 : enemy.slowFactor;
+      const enrageActive = Boolean(def.enrage && enemy.hp / enemy.maxHp <= def.enrage.threshold);
+      if (enrageActive && !enemy.enraged) {
+        enemy.enraged = true;
+        burst(enemy.x, enemy.y, def.color, 14, 110);
+        floatingText(enemy.x, enemy.y - 20, "광폭 질주", "#dfff62");
+      }
+      const enrageSpeed = enrageActive ? def.enrage.speed : 1;
+      const motionFactor = enemy.stunTimer > 0 ? 0 : enemy.slowFactor * enrageSpeed;
       if (def.cocoonBody) {
         enemy.hatchTimer = Math.max(0, (enemy.hatchTimer || 0) - dt);
         if (enemy.hatchTimer <= 0 && !enemy.dead) {
@@ -1415,6 +1449,7 @@
         }
       }
     }
+    updateEnemyGuardAuras();
     state.enemies = state.enemies.filter((e) => !e.dead);
     refreshEnemyCaches();
     updateBossHud();
@@ -1755,7 +1790,7 @@
 
   function dealDamage(enemy, amount, tower) {
     const def = ENEMY_DEFS[enemy.type];
-    const armor = enemyArmorValue(def);
+    const armor = enemyArmorValue(def) + (enemy.guardedTimer > 0 ? enemy.guardArmor || 0 : 0);
     const research = currentResearchLevels();
     const fractureBoost = enemy.fracturedTimer > 0 ? 1.15 : 1;
     const bossBoost = def.boss && tower ? 1 + (research.bossBreaker || 0) * 0.08 : 1;

@@ -16,8 +16,8 @@
       return STAGE_RULES[index] || STAGE_RULES[0];
     }
 
-    function stageEnemyHpScale(type) {
-      return stageRule().hp[type] || 1;
+    function stageEnemyHpScale() {
+      return 1;
     }
 
     function applyStageRulesToWaves(waves) {
@@ -29,27 +29,29 @@
         }));
         for (const extra of rule.extraGroups || []) {
           if (wave.wave >= extra.wave) {
-            groups.push({ type: extra.type, count: extra.count + Math.floor(wave.wave / 3), gap: extra.gap });
+            const extraRamp = Math.min(1, 0.5 + Math.max(0, wave.wave - extra.wave) * 0.25);
+            const extraCount = Math.ceil((extra.count + Math.floor(wave.wave / 3)) * extraRamp);
+            groups.push({ type: extra.type, count: extraCount, gap: extra.gap });
           }
         }
-        const reliefScale = earlyWaveReliefScale(state.stageIndex, wave.wave);
-        if (reliefScale < 1) {
+        const pacingScale = wavePacingScale(state.stageIndex, wave.wave, waves.length);
+        if (pacingScale !== 1) {
           for (const group of groups) {
-            group.count = Math.max(1, Math.ceil(group.count * reliefScale));
+            group.count = Math.max(1, Math.ceil(group.count * pacingScale));
           }
         }
         return { ...wave, groups };
       });
     }
 
-    function earlyWaveReliefScale(stageIndex, waveNumber) {
-      if (waveNumber < 1 || waveNumber > 3) return 1;
-      const stagePressure = Math.max(0, stageIndex - 4);
-      if (!stagePressure) return 1;
-      const intensity = Math.min(1, stagePressure / 4);
-      const targets = [0.7, 0.8, 0.9];
-      const target = targets[waveNumber - 1] || 1;
-      return 1 - (1 - target) * intensity;
+    function wavePacingScale(stageIndex, waveNumber, waveCount) {
+      const stagePressure = Math.max(0, stageIndex - 3);
+      if (!stagePressure || waveNumber < 1 || waveCount <= 1) return 1;
+
+      const intensity = Math.min(1, stagePressure / 5);
+      const progress = Math.max(0, Math.min(1, (waveNumber - 1) / (waveCount - 1)));
+      const target = 0.52 + 0.9 * progress;
+      return 1 + (target - 1) * intensity;
     }
 
     function stageWaveGrowthScale(stageIndex) {
@@ -59,17 +61,21 @@
     }
 
     function stageEnemyMix(stageIndex) {
-      const skitterStart = [6, 2, 2, 2, 2, 1, 1, 1, 1, 1];
-      const bruteStart = [99, 8, 4, 4, 4, 3, 3, 2, 2, 2];
-      const swarmingStart = [99, 99, 99, 8, 5, 5, 4, 3, 3, 2];
-      const broodcarrierStart = [99, 99, 99, 99, 7, 6, 5, 4, 4, 3];
+      const skitterStart = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4];
+      const bruteStart = [99, 7, 6, 6, 6, 6, 6, 6, 6, 6];
+      const venomrunnerStart = [99, 99, 99, 8, 7, 7, 6, 6, 5, 5];
+      const swarmingStart = [99, 99, 99, 8, 6, 7, 7, 7, 8, 8];
+      const shellguardStart = [99, 99, 99, 99, 99, 8, 8, 7, 7, 6];
+      const broodcarrierStart = [99, 99, 99, 99, 8, 8, 8, 8, 9, 9];
       const index = Math.max(0, Math.min(stageIndex, skitterStart.length - 1));
       return {
         skitterStart: skitterStart[index],
         bruteStart: bruteStart[index],
+        venomrunnerStart: venomrunnerStart[index],
         swarmingStart: swarmingStart[index],
+        shellguardStart: shellguardStart[index],
         broodcarrierStart: broodcarrierStart[index],
-        bossEnabled: stageIndex >= 3,
+        bossEnabled: true,
       };
     }
 
@@ -80,14 +86,16 @@
       state.waves = [];
       for (let w = 1; w <= stage.waves; w++) {
         if (w === 1) {
-          state.waves.push({ wave: w, groups: [{ type: "lurker", count: 6 + Math.max(0, state.stageIndex - 2), gap: 0.82 }], reward: 18 + w * 4 });
+          state.waves.push({ wave: w, groups: [{ type: "lurker", count: 6 + Math.floor(Math.max(0, state.stageIndex - 2) / 2), gap: 0.82 }], reward: 18 + w * 4 });
           continue;
         }
         const effectiveWave = 1 + (w - 1) * growthScale;
         const groups = [{ type: "lurker", count: 4 + Math.round(effectiveWave * 2), gap: Math.max(0.6, 0.96 - w * 0.032) }];
         if (w >= mix.skitterStart) groups.push({ type: "skitter", count: 3 + Math.round(effectiveWave), gap: 0.5 });
         if (w >= mix.bruteStart) groups.push({ type: "brute", count: Math.max(1, Math.floor(effectiveWave / 2)), gap: 1.2 });
+        if (w >= mix.venomrunnerStart) groups.push({ type: "venomrunner", count: 2 + Math.round(effectiveWave * 0.85), gap: 0.46 });
         if (w >= mix.swarmingStart) groups.push({ type: "swarming", count: 10 + Math.round(effectiveWave * 2), gap: 0.26 });
+        if (w >= mix.shellguardStart) groups.push({ type: "shellguard", count: Math.max(1, Math.floor(effectiveWave * 0.28)), gap: 1.35 });
         if (w >= mix.broodcarrierStart) groups.push({ type: "broodcarrier", count: Math.max(1, Math.floor(effectiveWave * 0.45)), gap: 0.95 });
         if (mix.bossEnabled && w === stage.waves) groups.push({ type: "colossus", count: 1, gap: 0.15 });
         state.waves.push({ wave: w, groups, reward: 18 + w * 4 });
@@ -146,11 +154,15 @@
       if (def.speed >= 72) tags.push({ text: "고속", tone: "control" });
       else if (def.speed <= 36) tags.push({ text: "중장", tone: "armor" });
       if (def.hp <= 30) tags.push({ text: "군체", tone: "default" });
+      if (def.enrage) tags.push({ text: "광폭 질주", tone: "alert" });
+      if (def.guardAura) tags.push({ text: "방호 오라", tone: "armor" });
       if (def.cocoon) tags.push({ text: "처치 시 고치", tone: "alert" });
       return tags;
     }
 
     function enemySpecialText(type, def, hpScale = 1) {
+      if (def?.enrage) return `체력 ${Math.round(def.enrage.threshold * 100)}% 이하에서 이동 속도 ${formatPreviewNumber(def.enrage.speed, 2)}배`;
+      if (def?.guardAura) return `주변 ${def.guardAura.radius}px 적에게 장갑 +${def.guardAura.armor} 부여`;
       if (!def?.cocoon) return "";
       const hatchText = def.cocoon.hatchGroups
         .map((group) => `${ENEMY_DEFS[group.type]?.name || group.type} ${group.count}기`)
@@ -161,13 +173,12 @@
     function currentWaveEnemyRoster() {
       const difficulty = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS.easy;
       const hpScale = difficulty.hp || 1;
-      const hpRule = stageRule().hp || {};
       const summary = new Map();
       for (const wave of state.waves) {
         for (const group of wave.groups) {
           const def = ENEMY_DEFS[group.type];
           if (!def || def.hiddenInRoster) continue;
-          const stageHpScale = hpRule[group.type] || 1;
+          const stageHpScale = stageEnemyHpScale(group.type);
           if (!summary.has(group.type)) {
             summary.set(group.type, {
               type: group.type,

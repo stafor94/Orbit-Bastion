@@ -183,10 +183,10 @@
     function difficultyDescription(id) {
       if (window.OrbitDifficulties) return window.OrbitDifficulties.describe(id);
       if (id === "easy") return "적 체력 80%";
-      if (id === "normal") return "적 체력 100%";
-      if (id === "hard") return "적 체력 200%";
-      if (id === "hell") return "적 체력 300%";
-      if (id === "nightmare") return "적 체력 400%";
+      if (id === "normal") return "적 체력 100% / 장갑 +1";
+      if (id === "hard") return "적 체력 200% / 장갑 +3";
+      if (id === "hell") return "적 체력 300% / 장갑 +5";
+      if (id === "nightmare") return "적 체력 400% / 장갑 +10";
       return "";
     }
 
