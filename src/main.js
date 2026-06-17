@@ -467,6 +467,7 @@
     const stage = STAGES[state.stageIndex];
     const roster = currentWaveEnemyRoster();
     const summary = stageEnemySummary();
+    const difficulty = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS.easy;
     const modal = document.createElement("div");
     modal.className = "modal-backdrop stage-intel-backdrop";
     modal.innerHTML = `
@@ -480,6 +481,7 @@
         </div>
         <div class="stage-intel-summary">
           <p>${summary.summary}</p>
+          <p>현재 난이도 ${difficulty.label}: HP와 장갑은 난이도 보정 적용 최종값입니다.</p>
           <div class="stage-intel-tags">
             ${summary.tags.map((tag) => `<span class="intel-tag ${tag.tone || "default"}">${tag.text}</span>`).join("")}
           </div>
@@ -503,9 +505,9 @@
                 ${enemy.tags.map((tag) => `<span class="intel-tag ${tag.tone || "default"}">${tag.text}</span>`).join("")}
               </div>
               <div class="stage-enemy-grid">
-                <span>체력 ${enemy.hp}</span>
+                <span>최종 HP ${enemy.hp}</span>
                 <span>속도 ${enemy.speed}</span>
-                <span>장갑 ${enemy.armor}</span>
+                <span>최종 장갑 ${enemy.armor}</span>
                 <span>처치 보상 ${enemy.reward}</span>
                 ${enemy.special ? `<span>${enemy.special}</span>` : ""}
               </div>
