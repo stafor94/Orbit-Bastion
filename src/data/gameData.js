@@ -347,12 +347,12 @@
 
     { id: "range", name: "궤도 조준 렌즈", desc: "모든 타워의 사거리가 레벨마다 4% 증가합니다.", max: 5, baseCost: 4, tier: 2, requires: { parents: [{ id: "ballistics", level: 2 }] } },
     { id: "cooldown", name: "과충전 회로", desc: "모든 타워의 공격 주기가 레벨마다 3% 짧아집니다.", max: 5, baseCost: 4, tier: 3, requires: { parents: [{ id: "range", level: 2 }] } },
-    { id: "armorPierce", name: "장갑 관통 탄심", desc: "적 장갑으로 줄어드는 피해가 레벨마다 감소합니다.", max: 5, baseCost: 4, tier: 4, requires: { parents: [{ id: "cooldown", level: 2 }] } },
+    { id: "armorPierce", name: "장갑 관통 탄심", desc: "적 장갑을 레벨마다 2만큼 고정 감소시킨 뒤 피해를 계산합니다.", max: 5, baseCost: 4, tier: 4, requires: { parents: [{ id: "cooldown", level: 2 }] } },
     { id: "allDamage", name: "전술 증폭 매트릭스", desc: "모든 타워의 피해량이 레벨마다 4% 증가합니다.", max: 5, baseCost: 4, tier: 2, requires: { parents: [{ id: "targeting", level: 2 }] } },
     { id: "recycle", name: "재판매 정산", desc: "타워 판매 회수율이 레벨마다 5% 증가합니다.", max: 5, baseCost: 4, tier: 3, requires: { parents: [{ id: "salvage", level: 2 }] } },
 
     { id: "repair", name: "웨이브 간 자동 수리", desc: "웨이브 종료 시 코어를 레벨마다 1 회복합니다.", max: 4, baseCost: 5, tier: 2, requires: { parents: [{ id: "core", level: 2 }] } },
-    { id: "fortress", name: "요새 코어 프로토콜", desc: "보스가 코어에 주는 피해가 레벨마다 1 감소합니다.", max: 4, baseCost: 6, tier: 3, requires: { parents: [{ id: "repair", level: 2 }] } },
+    { id: "fortress", name: "요새 코어 프로토콜", desc: "5초마다 1씩 회복되어 적 1기의 공격을 막는 코어 쉴드를 레벨마다 1 제공합니다.", max: 4, baseCost: 6, tier: 3, requires: { parents: [{ id: "repair", level: 2 }] } },
     { id: "bossBreaker", name: "거대 개체 분쇄", desc: "보스에게 주는 피해가 레벨마다 8% 증가합니다.", max: 4, baseCost: 5, tier: 3, requires: { parents: [{ id: "allDamage", level: 2 }] } },
     { id: "overdrive", name: "전장 과부하", desc: "웨이브 중 모든 타워 피해량이 레벨마다 3% 증가합니다.", max: 4, baseCost: 5, tier: 4, requires: { parents: [{ id: "bossBreaker", level: 2 }] } },
     { id: "waveBonus", name: "웨이브 회수 작전", desc: "웨이브 종료 보상이 레벨마다 5% 증가합니다.", max: 4, baseCost: 5, tier: 2, requires: { parents: [{ id: "capacitors", level: 2 }] } },

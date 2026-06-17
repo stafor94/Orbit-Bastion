@@ -90,7 +90,7 @@
         case "cooldown":
           return `모든 타워 공격 주기 -${level * 3}%`;
         case "armorPierce":
-          return `장갑 관통 +${(level * 4.5).toFixed(1)}%p`;
+          return `적 장갑 ${level * 2} 고정 감소`;
         case "allDamage":
           return `모든 타워 피해 +${level * 4}%`;
         case "recycle":
@@ -98,7 +98,7 @@
         case "repair":
           return `웨이브 종료 시 코어 회복 +${level}`;
         case "fortress":
-          return `코어가 받는 보스 피해 -${level}`;
+          return `5초마다 재생되는 코어 쉴드 최대 ${level}`;
         case "bossBreaker":
           return `보스 대상 피해 +${level * 8}%`;
         case "overdrive":
