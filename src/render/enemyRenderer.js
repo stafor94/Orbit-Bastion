@@ -122,6 +122,8 @@
       if ((enemy.stunTimer || 0) > 0.01) badges.push({ text: "기절", fill: "rgba(255, 200, 90, 0.16)", stroke: "rgba(255, 200, 90, 0.48)", color: "#ffd27a" });
       else if (enemy.slowTimer > 0) badges.push({ text: "감속", fill: "rgba(125, 233, 255, 0.16)", stroke: "rgba(125, 233, 255, 0.45)", color: "#baf4ff" });
       if (enemy.markedTimer > 0) badges.push({ text: "표식", fill: "rgba(125, 255, 139, 0.16)", stroke: "rgba(125, 255, 139, 0.45)", color: "#c9ffd1" });
+      if (enemy.enraged) badges.push({ text: "광폭", fill: "rgba(223, 255, 98, 0.16)", stroke: "rgba(223, 255, 98, 0.45)", color: "#efffa6" });
+      if (enemy.guardedTimer > 0) badges.push({ text: `방호 +${enemy.guardArmor || 0}`, fill: "rgba(110, 200, 255, 0.16)", stroke: "rgba(110, 200, 255, 0.46)", color: "#d8f3ff" });
       if (enemy.fracturedTimer > 0) badges.push({ text: "균열", fill: "rgba(255, 94, 108, 0.16)", stroke: "rgba(255, 94, 108, 0.36)", color: "#ffb5bd" });
       if (!badges.length) return;
       ctx.font = "900 9px 'Noto Sans KR', 'Malgun Gothic', sans-serif";
@@ -148,8 +150,14 @@
         case "skitter":
           drawSkitter(enemy, def, hpT);
           break;
+        case "venomrunner":
+          drawVenomRunner(enemy, def, hpT);
+          break;
         case "brute":
           drawBrute(enemy, def, hpT);
+          break;
+        case "shellguard":
+          drawShellGuard(enemy, def, hpT);
           break;
         case "swarming":
           drawSwarming(enemy, def, hpT);
@@ -298,6 +306,39 @@
       ctx.stroke();
       drawAlienEye(-r * 0.12, -r * 0.18, Math.max(2, r * 0.14), def.color);
       drawAlienEye(r * 0.18, -r * 0.1, Math.max(2, r * 0.11), def.color);
+    }
+
+
+    function drawVenomRunner(enemy, def, hpT) {
+      drawSkitter(enemy, def, hpT);
+      const r = enemy.radius;
+      ctx.strokeStyle = enemy.enraged ? "rgba(223, 255, 98, 0.9)" : "rgba(223, 255, 98, 0.34)";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * (1.25 + Math.sin(enemy.phase * 9) * 0.08), -0.9, 0.9);
+      ctx.stroke();
+    }
+
+    function drawShellGuard(enemy, def, hpT) {
+      drawBrute(enemy, def, hpT);
+      const r = enemy.radius;
+      const aura = def.guardAura?.radius || 0;
+      if (aura > 0) {
+        ctx.strokeStyle = "rgba(110, 200, 255, 0.24)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.min(aura * 0.28, r * 1.95), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(230, 248, 255, 0.72)";
+      ctx.lineWidth = 2;
+      for (let side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(side * r * 0.25, -r * 0.7);
+        ctx.lineTo(side * r * 0.82, -r * 0.2);
+        ctx.lineTo(side * r * 0.65, r * 0.55);
+        ctx.stroke();
+      }
     }
 
     function drawSwarming(enemy, def, hpT) {
