@@ -69,6 +69,9 @@
     stageIndex: 0,
     core: 20,
     maxCore: 20,
+    coreShield: 0,
+    coreShieldMax: 0,
+    coreShieldTimer: 0,
     alloy: 0,
     waveIndex: 0,
     waveActive: false,
@@ -542,9 +545,7 @@
   const PATH_ENTRY_EXTENSION = 36;
   const SIMULATION_STEP = 1 / 120;
   const LASER_FOCUS_PER_HIT = 0.1;
-  const LASER_MAX_DAMAGE_MULTIPLIER = 2;
-  const LASER_MAX_FOCUS_BONUS = LASER_MAX_DAMAGE_MULTIPLIER - 1;
-  const LASER_MAX_FOCUS_HITS = Math.round(LASER_MAX_FOCUS_BONUS / LASER_FOCUS_PER_HIT);
+  const LASER_BASE_MAX_DAMAGE_MULTIPLIER = 2;
   const LASER_DAMAGE_INTERVAL = 0.25;
   const SAVE_BACKUP_VERSION = 1;
   let layoutResizeObserver = null;
@@ -819,6 +820,9 @@
     state.researchLevels = research;
     state.core = stage.core + research.core * 2;
     state.maxCore = state.core;
+    state.coreShieldMax = research.fortress || 0;
+    state.coreShield = state.coreShieldMax;
+    state.coreShieldTimer = 0;
     state.alloy = stage.alloy + research.alloy * 25;
     state.waveIndex = 0;
     state.waveActive = false;
@@ -1140,7 +1144,7 @@
     if (stats.pierce) parts.push(`관통 ${stats.pierce}`);
     if (stats.auraDamage) parts.push(`피해 보정 +${stats.auraDamage}%`);
     if (stats.auraCooldown) parts.push(`주기 보정 -${stats.auraCooldown}%`);
-    if (type === "laser") parts.push(`집중 공격마다 피해 +${LASER_FOCUS_PER_HIT.toFixed(1)}배, 최대 x${LASER_MAX_DAMAGE_MULTIPLIER}`);
+    if (type === "laser") parts.push(`집중 공격마다 피해 +${LASER_FOCUS_PER_HIT.toFixed(1)}배, 최대 x${laserMaxDamageMultiplier(branch)}`);
     if (branch) {
       const detail = branchDetailText(type, branch);
       parts.push(detail ? `${branchName(type, branch)} (${detail})` : branchName(type, branch));
@@ -1153,18 +1157,31 @@
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
   }
 
-  function laserFocusHits(focusBonus) {
-    return Math.min(LASER_MAX_FOCUS_HITS, Math.round(Math.max(0, focusBonus) / LASER_FOCUS_PER_HIT));
+  function laserMaxDamageMultiplier(branch) {
+    return branch === "overheat" ? 3 : LASER_BASE_MAX_DAMAGE_MULTIPLIER;
   }
 
-  function laserFocusMultiplier(focusBonus) {
-    const bonus = Math.min(LASER_MAX_FOCUS_BONUS, Math.max(0, focusBonus));
-    return Math.min(LASER_MAX_DAMAGE_MULTIPLIER, 1 + bonus);
+  function laserMaxFocusBonus(branch) {
+    return laserMaxDamageMultiplier(branch) - 1;
   }
 
-  function laserFocusRatio(focusBonus) {
-    if (LASER_MAX_FOCUS_BONUS <= 0) return 1;
-    return Math.max(0, Math.min(1, focusBonus / LASER_MAX_FOCUS_BONUS));
+  function laserMaxFocusHits(branch) {
+    return Math.round(laserMaxFocusBonus(branch) / LASER_FOCUS_PER_HIT);
+  }
+
+  function laserFocusHits(focusBonus, branch = null) {
+    return Math.min(laserMaxFocusHits(branch), Math.round(Math.max(0, focusBonus) / LASER_FOCUS_PER_HIT));
+  }
+
+  function laserFocusMultiplier(focusBonus, branch = null) {
+    const bonus = Math.min(laserMaxFocusBonus(branch), Math.max(0, focusBonus));
+    return Math.min(laserMaxDamageMultiplier(branch), 1 + bonus);
+  }
+
+  function laserFocusRatio(focusBonus, branch = null) {
+    const maxBonus = laserMaxFocusBonus(branch);
+    if (maxBonus <= 0) return 1;
+    return Math.max(0, Math.min(1, focusBonus / maxBonus));
   }
 
   function effectiveTowerStats(tower, slot) {
@@ -1222,7 +1239,7 @@
 
   function towerDetailHtml(type, level, slot, branch, tower = null) {
     const stats = tower ? effectiveTowerStats(tower, slot) : towerStats(type, level, slot, branch);
-    const output = towerMetrics.estimateOutput(type, stats, LASER_MAX_DAMAGE_MULTIPLIER);
+    const output = towerMetrics.estimateOutput(type, stats, laserMaxDamageMultiplier(branch));
     const chips = [];
     if (type === "laser") {
       chips.push(`<span class="detail-chip">DPS ${roundedMetric(output.dps)} / 최대 ${roundedMetric(output.maxDps)}</span>`);
@@ -1303,6 +1320,7 @@
     }
     state.time += dt;
     state.shock = Math.max(0, state.shock - dt * 1.8);
+    updateCoreShield(dt);
     spawnTick(dt);
     updateEnemies(dt);
     updateTowers(dt);
@@ -1436,19 +1454,25 @@
       }
 
       if (enemy.progress >= state.pathLength) {
-        const research = currentResearchLevels();
-        const leakDamage = def.boss ? Math.max(1, 8 - (research.fortress || 0)) : 1;
+        const leakDamage = def.boss ? 8 : 1;
         enemy.dead = true;
-        state.core -= leakDamage;
-        state.shock = 1;
-        floatingText(state.width - 28, state.height - 32, `코어 -${leakDamage}`, "#ff5e6c");
-        updateUI();
-        if (state.core <= 0) {
-          state.core = 0;
-          state.gameOver = true;
-          showBanner("방어선 붕괴", "코어가 파괴되었습니다. 타워 배치를 재정비하세요.");
-          openResultScreen(false);
+        if (state.coreShield > 0) {
+          state.coreShield -= 1;
+          state.coreShieldTimer = 0;
+          state.shock = 0.45;
+          floatingText(state.width - 28, state.height - 32, "쉴드 방어", "#72f7ff");
+        } else {
+          state.core -= leakDamage;
+          state.shock = 1;
+          floatingText(state.width - 28, state.height - 32, `코어 -${leakDamage}`, "#ff5e6c");
+          if (state.core <= 0) {
+            state.core = 0;
+            state.gameOver = true;
+            showBanner("방어선 붕괴", "코어가 파괴되었습니다. 타워 배치를 재정비하세요.");
+            openResultScreen(false);
+          }
         }
+        updateUI();
       }
     }
     updateEnemyGuardAuras();
@@ -1533,6 +1557,9 @@
       const rangeScale = 1 + (research.range || 0) * 0.04;
       const cooldownScale = Math.max(0.7, 1 - (research.cooldown || 0) * 0.03) * support.cooldown;
       const range = towerBaseRange(tower.type, def, tower.level, tower.branch) * bonuses.range * rangeScale;
+      const priorityBossTarget = tower.type === "laser" && tower.branch === "overheat"
+        ? state.enemyProgressOrder.find((enemy) => ENEMY_DEFS[enemy.type]?.boss && !enemy.dead && dist(slot, enemy) <= range)
+        : null;
       const lockedLaserTarget = tower.type === "laser"
         && tower.laserTarget
         && !tower.laserTarget.dead
@@ -1540,7 +1567,7 @@
         ? tower.laserTarget
         : null;
       const target = tower.type === "laser"
-        ? lockedLaserTarget || findNearestTarget(slot.x, slot.y, range)
+        ? priorityBossTarget || lockedLaserTarget || findNearestTarget(slot.x, slot.y, range)
         : findTarget(slot.x, slot.y, range);
       tower.cooldown -= dt;
       tower.recoil = Math.max(0, tower.recoil - dt * 5);
@@ -1577,10 +1604,9 @@
         const laserTarget = tower.laserTarget;
         if (!laserTarget || laserTarget.dead || dist(slot, laserTarget) > range) continue;
         tower.angle = Math.atan2(laserTarget.y - slot.y, laserTarget.x - slot.x);
-        const focusRatio = laserFocusRatio(tower.laserFocus);
-        const focusMultiplier = laserFocusMultiplier(tower.laserFocus);
-        const branchBoost = tower.branch === "overheat" && (ENEMY_DEFS[laserTarget.type].boss || enemyArmorValue(laserTarget.type) > 0) ? 1.45 : 1;
-        const damagePerSecond = def.damage * levelScale * damageResearch * branchBoost * focusMultiplier;
+        const focusRatio = laserFocusRatio(tower.laserFocus, tower.branch);
+        const focusMultiplier = laserFocusMultiplier(tower.laserFocus, tower.branch);
+        const damagePerSecond = def.damage * levelScale * damageResearch * focusMultiplier;
         tower.laserDamageBuffer += damagePerSecond * dt;
         tower.laserDamageTimer += dt;
         if (tower.laserDamageTimer >= LASER_DAMAGE_INTERVAL) {
@@ -1588,7 +1614,7 @@
           tower.laserDamageBuffer = 0;
           tower.laserDamageTimer = 0;
           dealDamage(laserTarget, damage, tower);
-          tower.laserFocus = Math.min(LASER_MAX_FOCUS_BONUS, tower.laserFocus + LASER_FOCUS_PER_HIT);
+          tower.laserFocus = Math.min(laserMaxFocusBonus(tower.branch), tower.laserFocus + LASER_FOCUS_PER_HIT);
           if (tower.branch === "prism") {
             for (const enemy of nearbyEnemies(laserTarget, 82, 3)) {
               if (enemy !== laserTarget) {
@@ -1663,7 +1689,6 @@
         for (const [index, enemy] of lineHits.entries()) {
           const hitScale = Math.max(0.72, 1 - index * 0.12);
           dealDamage(enemy, def.damage * levelScale * damageResearch * hitScale, tower);
-          if (tower.branch === "breach") enemy.fracturedTimer = Math.max(enemy.fracturedTimer || 0, 1.1);
           if (tower.branch === "lock") enemy.markedTimer = Math.max(enemy.markedTimer || 0, 5);
         }
         state.beams.push({ x1: slot.x, y1: slot.y, x2: beamEnd.x, y2: beamEnd.y, color: def.color, width: tower.branch === "breach" ? 6 : 5 });
@@ -1790,6 +1815,17 @@
 
 
 
+  function updateCoreShield(dt) {
+    if (state.coreShieldMax <= 0 || state.coreShield >= state.coreShieldMax) return;
+    state.coreShieldTimer += dt;
+    if (state.coreShieldTimer >= 5) {
+      const restored = Math.floor(state.coreShieldTimer / 5);
+      state.coreShield = Math.min(state.coreShieldMax, state.coreShield + restored);
+      state.coreShieldTimer %= 5;
+      updateUI();
+    }
+  }
+
   function dealDamage(enemy, amount, tower) {
     const def = ENEMY_DEFS[enemy.type];
     const armor = enemyArmorValue(def) + (enemy.guardedTimer > 0 ? enemy.guardArmor || 0 : 0);
@@ -1797,9 +1833,10 @@
     const fractureBoost = enemy.fracturedTimer > 0 ? 1.15 : 1;
     const bossBoost = def.boss && tower ? 1 + (research.bossBreaker || 0) * 0.08 : 1;
     const markedBoost = enemy.markedTimer > 0 ? 1.3 : 1;
-    const armorPenalty = Math.max(0.08, 1 - (research.armorPierce || 0) * 0.13);
-    const effectiveArmorPenalty = tower?.type === "rail" && tower.branch === "breach" ? armorPenalty * 0.22 : armorPenalty;
-    const actual = Math.max(1, amount * fractureBoost * bossBoost * markedBoost - armor * effectiveArmorPenalty);
+    const armorReduction = (research.armorPierce || 0) * 2;
+    const effectiveArmor = Math.max(0, armor - armorReduction);
+    const finalArmor = tower?.type === "rail" && tower.branch === "breach" ? effectiveArmor * 0.5 : effectiveArmor;
+    const actual = Math.max(1, amount * fractureBoost * bossBoost * markedBoost - finalArmor);
     enemy.hp -= actual;
     queueDamageNumber(enemy, actual);
     if (enemy.hp <= 0 && !enemy.dead) {
@@ -1929,7 +1966,7 @@
         shock: "주 대상 정지 0.42초",
       },
       laser: {
-        overheat: "보스 또는 장갑이 있는 적에게 피해 +45%",
+        overheat: "보스 우선 공격, 집중 공격 최대 x3",
         prism: "주 대상 주변 적 2기에게 피해의 30% 보조 광선 연결",
       },
       plasma: {
@@ -1945,7 +1982,7 @@
         surge: "정지 0.2초, 연쇄 피해 감소 없음",
       },
       rail: {
-        breach: "관통 대상 +2기, 장갑 피해 감소 78% 완화, 적이 1.1초 동안 받는 모든 피해 +15%",
+        breach: "관통 대상 +2기, 장갑 50% 무시",
         lock: "명중한 적을 5초 표식, 받는 모든 피해 +30%",
       },
       gravity: {
@@ -2049,7 +2086,7 @@
     STAGES,
     DIFFICULTY_DEFS,
     TOWER_DEFS,
-    LASER_MAX_FOCUS_HITS,
+    laserMaxFocusHits,
     waveOverview,
     liveThreatOverview,
     selectedTower,
@@ -2103,7 +2140,7 @@
 
   function towerCardSummary(type, slot = null) {
     const stats = towerStats(type, 1, slot);
-    const output = towerMetrics.estimateOutput(type, stats, LASER_MAX_DAMAGE_MULTIPLIER);
+    const output = towerMetrics.estimateOutput(type, stats, laserMaxDamageMultiplier());
     const lines = [];
     if (type === "beacon") {
       lines.push(`지원 ${stats.auraDamage}%`);

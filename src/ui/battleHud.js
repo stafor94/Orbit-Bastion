@@ -9,7 +9,7 @@
       STAGES,
       DIFFICULTY_DEFS,
       TOWER_DEFS,
-      LASER_MAX_FOCUS_HITS,
+      laserMaxFocusHits,
       waveOverview,
       liveThreatOverview,
       selectedTower,
@@ -38,7 +38,7 @@
       const waveInfo = waveOverview();
       const liveThreat = liveThreatOverview();
       ui.difficulty.textContent = difficulty.label;
-      ui.core.textContent = String(state.core);
+      ui.core.textContent = state.coreShieldMax > 0 ? `${state.core} +${state.coreShield}쉴드` : String(state.core);
       ui.alloy.textContent = String(Math.floor(state.alloy));
       ui.wave.textContent = `${Math.min(state.waveIndex + 1, state.waves.length)}/${state.waves.length || stage.waves}`;
       ui.stage.textContent = `${state.stageIndex + 1}. ${stage.name}`;
@@ -118,10 +118,10 @@
       if (!tower || tower.type !== "laser") return;
       const live = $("selectedLiveMetric");
       if (!live) return;
-      const multiplier = laserFocusMultiplier(tower.laserFocus);
-      const hits = laserFocusHits(tower.laserFocus);
+      const multiplier = laserFocusMultiplier(tower.laserFocus, tower.branch);
+      const hits = laserFocusHits(tower.laserFocus, tower.branch);
       live.textContent = tower.laserTarget
-        ? `집중 ${hits}/${LASER_MAX_FOCUS_HITS} / 피해 x${multiplier.toFixed(1)}`
+        ? `집중 ${hits}/${laserMaxFocusHits(tower.branch)} / 피해 x${multiplier.toFixed(1)}`
         : tower.laserRetargetTimer > 0
           ? `재조준 ${tower.laserRetargetTimer.toFixed(1)}s`
           : "표적 탐색";
