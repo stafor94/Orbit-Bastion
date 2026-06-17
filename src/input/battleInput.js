@@ -23,7 +23,6 @@
       scheduleAutoWave,
       openBaseScreen,
       resetStage,
-      initPyodideWaves,
       closeOverlay,
     } = deps;
 
@@ -136,7 +135,6 @@
         playSound("click");
         const next = state.victory ? Math.min(state.stageIndex + 1, STAGES.length - 1) : state.stageIndex;
         resetStage(next);
-        initPyodideWaves();
         closeOverlay();
       });
       return layoutResizeObserver;

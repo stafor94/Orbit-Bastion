@@ -12,7 +12,6 @@
       stageRule,
       researchPoints,
       resetStage,
-      initPyodideWaves,
       closeOverlay,
       openResearchScreen,
       confirmProgressReset,
@@ -128,7 +127,6 @@
         button.addEventListener("click", () => {
           const index = Number(button.dataset.stage);
           resetStage(index);
-          initPyodideWaves();
           closeOverlay();
         });
       });

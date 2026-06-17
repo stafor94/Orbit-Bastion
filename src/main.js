@@ -98,7 +98,6 @@
     shock: 0,
     gameOver: false,
     victory: false,
-    pyodideReady: false,
     screen: "base",
     runKills: 0,
     runEarned: 0,
@@ -251,7 +250,6 @@
     researchIconSvg,
     getOpenBaseScreen: () => openBaseScreen,
     resetStage,
-    initPyodideWaves,
     playSound,
     difficultyProgressKey,
     applyTowerUpgrade,
@@ -424,7 +422,6 @@
       const payload = JSON.parse(await file.text());
       applySaveBackup(payload);
       resetStage(state.stageIndex);
-      initPyodideWaves();
       window.alert("백업 파일을 불러왔습니다.");
       return true;
     } catch (error) {
@@ -439,7 +436,6 @@
     localStorage.setItem("orbit.difficulty", state.difficulty);
     loadDifficultyProgress(difficultyId);
     resetStage(state.stageIndex);
-    initPyodideWaves();
     openBaseScreen();
   }
 
@@ -550,9 +546,6 @@
   const LASER_DAMAGE_INTERVAL = 0.25;
   const SAVE_BACKUP_VERSION = 1;
   let layoutResizeObserver = null;
-  let pyodideRuntimePromise = null;
-  let pyodideSourcePromise = null;
-  let pyodideWaveRequestId = 0;
 
   function resize() {
     const rect = canvas.parentElement.getBoundingClientRect();
@@ -857,49 +850,6 @@
     updateSoundButton();
     updateAutoWaveButton();
     showBanner("방어망 가동", "빈 슬롯을 선택한 뒤 타워를 골라 배치하세요.", 3000);
-  }
-
-  async function getPyodideRuntime() {
-    if (!window.loadPyodide) return null;
-    if (!pyodideRuntimePromise) {
-      pyodideRuntimePromise = (async () => {
-        const pyodide = await window.loadPyodide();
-        pyodideSourcePromise = pyodideSourcePromise || fetch(`python/wave_generator.py?v=${Date.now()}`).then((response) => {
-          if (!response.ok) {
-            throw new Error(`wave generator load failed: ${response.status}`);
-          }
-          return response.text();
-        });
-        pyodide.runPython(await pyodideSourcePromise);
-        return pyodide;
-      })().catch((error) => {
-        pyodideRuntimePromise = null;
-        pyodideSourcePromise = null;
-        throw error;
-      });
-    }
-    return pyodideRuntimePromise;
-  }
-
-  async function initPyodideWaves() {
-    if (!window.loadPyodide) return;
-    const requestId = ++pyodideWaveRequestId;
-    try {
-      const pyodide = await getPyodideRuntime();
-      if (!pyodide || requestId !== pyodideWaveRequestId) return;
-      const waves = pyodide.runPython(`generate_stage_waves(${state.stageIndex}, ${STAGES[state.stageIndex].waves})`);
-      if (requestId !== pyodideWaveRequestId) return;
-      state.waves = applyStageRulesToWaves(waves.toJs({ dict_converter: Object.fromEntries }));
-      console.log("[wave-debug] pyodide waves", {
-        stageIndex: state.stageIndex,
-        firstWave: state.waves[0] ? state.waves[0].groups.map((group) => ({ type: group.type, count: group.count, gap: group.gap })) : [],
-      });
-      state.pyodideReady = true;
-      updateUI();
-    } catch (error) {
-      if (requestId !== pyodideWaveRequestId) return;
-      state.pyodideReady = false;
-    }
   }
 
   function makeTower(type, slotIndex) {
@@ -1933,7 +1883,6 @@
     stageRule,
     researchPoints,
     resetStage,
-    initPyodideWaves,
     closeOverlay,
     openResearchScreen: () => openResearchScreen(),
     confirmProgressReset: () => confirmProgressReset(),
@@ -2123,7 +2072,6 @@
     scheduleAutoWave,
     openBaseScreen,
     resetStage,
-    initPyodideWaves,
     closeOverlay,
   });
   const { handlePrimaryAction, wireEvents } = battleInput;
@@ -2234,7 +2182,6 @@
   layoutResizeObserver = wireEvents();
   resize();
   resetStage(state.stageIndex);
-  initPyodideWaves();
   openBaseScreen();
   requestAnimationFrame(frame);
 })();
