@@ -139,7 +139,7 @@
     }
 
     function drawLaserFocusGauge(tower, slot, color) {
-      const ratio = laserFocusRatio(tower.laserFocus);
+      const ratio = laserFocusRatio(tower.laserFocus, tower.branch);
       const width = 42;
       const x = slot.x - width / 2;
       const y = slot.y - 35;

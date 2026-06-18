@@ -43,7 +43,7 @@
       short: "크라이오 필드",
       cost: 80,
       color: "#7de9ff",
-      range: 110,
+      range: 90,
       cooldown: 0,
       damage: 0,
       slow: 0.6,
@@ -385,7 +385,7 @@
       { id: "shock", name: "충격탄", desc: "주 대상을 짧게 정지시킵니다." },
     ],
     laser: [
-      { id: "overheat", name: "과열 광선", desc: "보스와 갑각 적에게 피해량이 크게 증가합니다." },
+      { id: "overheat", name: "과열 광선", desc: "보스를 우선 조준하고 집중 공격 피해가 최대 3배까지 증가합니다." },
       { id: "prism", name: "분광 빔", desc: "근처 적 둘에게 약한 보조 광선을 연결합니다." },
     ],
     plasma: [
