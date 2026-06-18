@@ -32,6 +32,12 @@
       target.innerHTML = tags.map((tag) => `<span class="intel-tag ${tag.tone || "default"}">${tag.text}</span>`).join("");
     }
 
+    function announce(message) {
+      if (!ui.a11yStatus || !message || state.lastA11yMessage === message) return;
+      state.lastA11yMessage = message;
+      ui.a11yStatus.textContent = message;
+    }
+
     function updateUI() {
       const stage = STAGES[state.stageIndex];
       const difficulty = DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS.easy;
@@ -57,7 +63,9 @@
       ui.towerBar.classList.toggle("hidden", !selectedEmptySlot);
 
       document.querySelectorAll(".tower-card").forEach((el) => {
-        el.classList.toggle("selected", el.dataset.type === state.selectedTowerType);
+        const selected = el.dataset.type === state.selectedTowerType;
+        el.classList.toggle("selected", selected);
+        el.setAttribute("aria-pressed", selected ? "true" : "false");
         updateTowerCardPreview(el);
       });
 
@@ -72,8 +80,11 @@
         ui.selectedDetails.innerHTML = towerDetailHtml(tower.type, tower.level, slot, tower.branch, tower) + slotEffectDetailHtml(slot);
         ui.upgrade.disabled = tower.level >= 4 || state.alloy < nextCost;
         ui.upgrade.textContent = tower.level >= 4 ? "최대" : `강화 ${nextCost}`;
+        ui.upgrade.setAttribute("aria-label", tower.level >= 4 ? `${def.name} 최대 강화` : `${def.name} 강화 비용 ${nextCost}`);
         ui.sell.disabled = false;
         ui.sell.textContent = `판매 ${towerSellValue(tower)}`;
+        ui.sell.setAttribute("aria-label", `${def.name} 판매, 회수 합금 ${towerSellValue(tower)}`);
+        ui.selectedCard.setAttribute("aria-label", `${def.name} 선택됨. ${ui.selectedLabel.textContent}`);
       } else if (selectedEmptySlot) {
         const slot = state.slots[state.selectedSlot];
         const kind = slotKindDef(slot.kind);
@@ -91,6 +102,8 @@
             : slotEffectDetailHtml(slot);
           ui.upgrade.disabled = state.alloy < buildCost;
           ui.upgrade.textContent = `건설 ${buildCost}`;
+          ui.upgrade.setAttribute("aria-label", `${def.name} 건설 비용 ${buildCost}`);
+          ui.selectedCard.setAttribute("aria-label", `${kind.name} 슬롯에 ${def.name} 건설 준비`);
         } else {
           ui.selectedLabel.textContent = "배치 후보";
           ui.selectedName.textContent = `${kind.name} 슬롯 - 구매할 타워를 선택하세요.`;
@@ -98,9 +111,12 @@
           ui.selectedDetails.innerHTML = slotEffectDetailHtml(slot);
           ui.upgrade.disabled = true;
           ui.upgrade.textContent = "건설";
+          ui.upgrade.setAttribute("aria-label", "건설할 타워를 먼저 선택하세요");
+          ui.selectedCard.setAttribute("aria-label", `${kind.name} 슬롯 선택됨. 구매할 타워를 선택하세요.`);
         }
         ui.sell.disabled = true;
         ui.sell.textContent = "판매";
+        ui.sell.setAttribute("aria-label", "판매할 타워가 없습니다");
       } else {
         ui.selectedLabel.textContent = state.victory ? "임무 완료" : state.gameOver ? "임무 실패" : "선택 없음";
         ui.selectedName.textContent = state.victory ? "다음 전장으로 이동할 수 있습니다." : state.gameOver ? "방어망을 다시 정비하세요." : "타워 또는 슬롯을 선택하세요.";
@@ -108,8 +124,15 @@
         ui.selectedDetails.innerHTML = "";
         ui.upgrade.disabled = true;
         ui.upgrade.textContent = "강화";
+        ui.upgrade.setAttribute("aria-label", "강화할 타워가 없습니다");
         ui.sell.disabled = true;
         ui.sell.textContent = "판매";
+        ui.sell.setAttribute("aria-label", "판매할 타워가 없습니다");
+        ui.selectedCard.setAttribute("aria-label", ui.selectedName.textContent);
+      }
+
+      if (tower || selectedEmptySlot || state.victory || state.gameOver) {
+        announce(`${ui.selectedLabel.textContent}. ${ui.selectedName.textContent}`);
       }
     }
 
@@ -149,6 +172,7 @@
       ui.banner.querySelector("strong").textContent = title;
       ui.banner.querySelector("span").textContent = text;
       ui.banner.classList.remove("hidden");
+      announce(`${title}. ${text}`);
       if (duration > 0) {
         showBanner.timer = window.setTimeout(() => {
           hideBanner();

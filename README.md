@@ -18,21 +18,60 @@ file:///.../Orbit-Bastion/index.html
 
 일반 정적 서버에서도 실행할 수 있지만 필수는 아닙니다.
 
+## 배포와 캐시
+
+`index.html`은 CSS와 JavaScript를 불러올 때 고정 자산 버전(`2026-06-content-sync`)을 쿼리 문자열로 붙입니다. 배포 후 파일이 바뀌면 이 값을 함께 변경해 브라우저 캐시를 갱신하세요.
+
+개발 중 강제로 새 파일을 받거나 특정 배포본을 확인하려면 URL에 `?v=원하는값`을 붙일 수 있습니다.
+
+```text
+file:///.../Orbit-Bastion/index.html?v=dev
+https://stafor94.github.io/Orbit-Bastion/?v=2026-06-content-sync
+```
+
+## 검증
+
+수치 계산과 콘텐츠 데이터 회귀를 한 번에 확인하려면 아래 명령을 실행합니다.
+
+```bash
+node scripts/run_tests.js
+```
+
+개별 검증도 실행할 수 있습니다.
+
+```bash
+node scripts/towerMetrics.test.js
+node scripts/gameData.validation.test.js
+node scripts/sync_readme_content.js --check
+```
+
+`gameData.validation.test.js`는 스테이지와 규칙 수 동기화, 스테이지 좌표 범위, 적/타워/연구 참조 무결성, 난이도/타워/분기 구조를 확인합니다.
+
+콘텐츠 수량과 이름이 바뀌면 아래 명령으로 `구현됨` 목록을 데이터 파일 기준으로 자동 갱신할 수 있습니다.
+
+```bash
+node scripts/sync_readme_content.js
+```
+
 ## 구현됨
 
+<!-- orbit-content:start -->
 - 모바일 세로형 레이아웃
 - Canvas 2D 절차적 전장 렌더링
 - WebGL 스캔라인 및 경고 펄스 오버레이
 - 반고정 타워 배치 슬롯
 - 타워 8종: 펄스 캐논, 레이저 랜스, 플라즈마 박격포, 크라이오 필드, 아크 테슬라, 레일 스파이어, 중력 앵커, 전술 비콘
-- 적 4종: 러커, 스키터, 브루트, 스웜링
-- 보스: 브루드 콜로서스
+- 일반/특수 적 8종: 러커, 스키터, 베놈 러너, 브루트, 갑각 수호체, 스웜링, 기생 운반체, 기생 고치
+- 보스 1종: 브루드 콜로서스
 - 웨이브 스폰, 타워 조준, 투사체, 범위 피해, 감속 효과
 - 강화 및 판매 조작
 - 스테이지 진행 데이터와 localStorage 해금/연구 보상
 - 기지 작전실 스테이지 선택 화면
 - 전술 연구소와 영구 성장 효과
 - 승리/패배 결과 화면
+- 스테이지 10종과 특수 규칙 9종
+- 난이도 5종: 쉬움, 보통, 어려움, 지옥, 악몽
+<!-- orbit-content:end -->
 
 ## 2차 작업 내용
 

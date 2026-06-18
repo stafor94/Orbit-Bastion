@@ -42,6 +42,7 @@
     bossWarning: $("bossWarning"),
     bossWarningTitle: $("bossWarningTitle"),
     bossWarningDetail: $("bossWarningDetail"),
+    a11yStatus: $("a11yStatus"),
   };
 
   const {
@@ -120,6 +121,7 @@
     lastTappedSlot: -1,
     lastTapAt: 0,
     selectedTowerInfoVisible: false,
+    lastA11yMessage: "",
   };
 
   const researchLogic = window.OrbitResearchLogic.create({
@@ -2180,7 +2182,9 @@
     const cost = towerBuildCost(type);
     const costEl = button.querySelector(".tower-card-cost");
     if (costEl) costEl.textContent = `${cost}`;
-    button.title = `${name} / 鍮꾩슜 ${cost}`;
+    const label = `${name} / 비용 ${cost}`;
+    button.title = label;
+    button.setAttribute("aria-label", label);
   }
 
   function buildTowerBar() {
@@ -2190,6 +2194,7 @@
       button.type = "button";
       button.className = "tower-card";
       button.dataset.type = type;
+      button.setAttribute("aria-pressed", "false");
       button.innerHTML = `
         <strong>${def.name}</strong>
         <span class="tower-card-cost">${towerBuildCost(type)}</span>
