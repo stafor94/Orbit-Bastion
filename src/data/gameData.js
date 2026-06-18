@@ -382,7 +382,7 @@
   const BRANCH_DEFS = {
     pulse: [
       { id: "pierce", name: "관통탄", desc: "명중 지점 주변 추가 적에게 45% 피해를 줍니다." },
-      { id: "shock", name: "충격탄", desc: "주 대상을 짧게 정지시킵니다." },
+      { id: "shock", name: "연격탄", desc: "공격이 2발씩 나갑니다." },
     ],
     laser: [
       { id: "overheat", name: "과열 광선", desc: "보스를 우선 조준하고 집중 공격 피해가 최대 3배까지 증가합니다." },
