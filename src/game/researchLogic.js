@@ -17,7 +17,7 @@
     }
 
     function researchCost(def, level) {
-      return def.baseCost + level * 2;
+      return def.baseCost + level;
     }
 
     function researchDef(id) {
