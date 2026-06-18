@@ -1636,7 +1636,7 @@
       } else if (tower.type === "cryo") {
         for (const enemy of state.enemies) {
           if (dist(slot, enemy) <= range) {
-            const branchBonus = tower.branch === "freeze" ? 0.2 : 0;
+            const branchBonus = tower.branch === "freeze" ? 0.1 : 0;
             enemy.slowFactor = Math.max(0.05, def.slow - (tower.level - 1) * 0.07 - research.cryo * 0.03 - branchBonus);
             enemy.slowTimer = 0.5;
           }
@@ -1707,22 +1707,26 @@
       } else if (target && tower.cooldown <= 0) {
         tower.cooldown = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
         tower.recoil = 1;
-        state.projectiles.push({
-          type: tower.type,
-          x: slot.x + Math.cos(tower.angle) * 15,
-          y: slot.y + Math.sin(tower.angle) * 15,
-          target,
-          damage: def.damage * levelScale * damageResearch,
-          speed: def.projectileSpeed * (1 + (research.ballistics || 0) * 0.08),
-          splash: def.splash ? def.splash * (1 + (tower.level - 1) * 0.16 + research.plasma * 0.06 + (tower.branch === "wide" ? 0.5 : 0)) : 0,
-          pullRadius: tower.type === "gravity" ? gravityPullRadiusForTower(def, tower.level, tower.branch) : 0,
-          pullDuration: tower.type === "gravity" ? gravityPullDurationForTower(def, tower.level, tower.branch) : 0,
-          pullStrength: tower.type === "gravity" ? gravityPullStrengthForTower(def, tower.level, tower.branch) : 0,
-          color: def.color,
-          tower,
-          branch: tower.branch,
-          trail: [],
-        });
+        const projectileCount = tower.type === "pulse" && tower.branch === "shock" ? 2 : 1;
+        for (let i = 0; i < projectileCount; i++) {
+          const offset = projectileCount > 1 ? (i - 0.5) * 5 : 0;
+          state.projectiles.push({
+            type: tower.type,
+            x: slot.x + Math.cos(tower.angle) * 15 - Math.sin(tower.angle) * offset,
+            y: slot.y + Math.sin(tower.angle) * 15 + Math.cos(tower.angle) * offset,
+            target,
+            damage: def.damage * levelScale * damageResearch,
+            speed: def.projectileSpeed * (1 + (research.ballistics || 0) * 0.08),
+            splash: def.splash ? def.splash * (1 + (tower.level - 1) * 0.16 + research.plasma * 0.06 + (tower.branch === "wide" ? 0.5 : 0)) : 0,
+            pullRadius: tower.type === "gravity" ? gravityPullRadiusForTower(def, tower.level, tower.branch) : 0,
+            pullDuration: tower.type === "gravity" ? gravityPullDurationForTower(def, tower.level, tower.branch) : 0,
+            pullStrength: tower.type === "gravity" ? gravityPullStrengthForTower(def, tower.level, tower.branch) : 0,
+            color: def.color,
+            tower,
+            branch: tower.branch,
+            trail: [],
+          });
+        }
         playSound(tower.type === "plasma" ? "boom" : "shoot");
         burst(slot.x, slot.y, def.color, tower.type === "plasma" ? 8 : 5, 80);
       }
@@ -1778,9 +1782,6 @@
             for (const enemy of nearbyEnemies(p.target, 48, 3)) {
               if (enemy !== p.target) dealDamage(enemy, p.damage * 0.45, p.tower);
             }
-          }
-          if (p.branch === "shock") {
-            p.target.stunTimer = Math.max(p.target.stunTimer || 0, 0.42);
           }
           burst(p.target.x, p.target.y, p.color, 9, 95);
         }
@@ -1963,7 +1964,7 @@
     const details = {
       pulse: {
         pierce: "명중 지점 48px 안의 추가 적 최대 2기에게 피해의 45%",
-        shock: "주 대상 정지 0.42초",
+        shock: "공격이 2발씩 발사",
       },
       laser: {
         overheat: "보스 우선 공격, 집중 공격 최대 x3",
@@ -1974,7 +1975,7 @@
         acid: "현재 폭발 반경의 50% 산성 지대 3초 생성, 1초마다 피해의 25%와 받는 피해 +15%",
       },
       cryo: {
-        freeze: "감속이 추가로 20% 강화됩니다.",
+        freeze: "감속이 추가로 10% 강화됩니다.",
         fracture: "사거리 +30%",
       },
       arc: {
