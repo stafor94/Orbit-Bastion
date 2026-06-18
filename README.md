@@ -4,7 +4,13 @@
 
 ## 실행
 
-브라우저에서 `index.html` 파일을 직접 엽니다. 별도의 Python 서버나 Pyodide CDN 로딩 없이 JavaScript만으로 게임이 실행됩니다.
+배포된 GitHub Pages 주소에서 바로 접속할 수 있습니다.
+
+```text
+https://stafor94.github.io/Orbit-Bastion/
+```
+
+브라우저에서 `index.html` 파일을 직접 열어도 됩니다. 별도의 Python 서버나 Pyodide CDN 로딩 없이 JavaScript만으로 게임이 실행됩니다.
 
 ```text
 file:///.../Orbit-Bastion/index.html
