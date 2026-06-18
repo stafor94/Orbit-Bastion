@@ -207,6 +207,7 @@
   Object.assign(DIFFICULTY_DEFS, window.OrbitDifficulties?.defs || {});
   const difficultyOrder = window.OrbitDifficulties?.order || Object.keys(DIFFICULTY_DEFS);
   const DEFAULT_UNLOCKED_DIFFICULTY_INDEX = Math.min(difficultyOrder.length - 1, 2);
+  const BOSS_MINION_BASE_COOLDOWN = 15;
   const DIFFICULTY_RESEARCH_REWARD = {
     easy: 1,
     normal: 2,
@@ -935,7 +936,7 @@
       pullOffsetY: 0,
       fracturedTimer: 0,
       markedTimer: 0,
-      spawnCooldown: def.boss ? 5 : 0,
+      spawnCooldown: def.boss ? BOSS_MINION_BASE_COOLDOWN : 0,
       bossPhase: 0,
       bossAnnounced: false,
       phase: Math.random() * 10,
@@ -1446,7 +1447,7 @@
         }
         enemy.spawnCooldown -= dt;
         if (enemy.spawnCooldown <= 0) {
-          enemy.spawnCooldown = Math.max(2.5, 5.8 - state.waveIndex * 0.2 - enemy.bossPhase * 0.55) * (stageRule().bossCooldown || 1);
+          enemy.spawnCooldown = Math.max(7.5, BOSS_MINION_BASE_COOLDOWN - state.waveIndex * 0.2 - enemy.bossPhase * 0.55) * (stageRule().bossCooldown || 1);
           spawnBossMinions(enemy, 5 + enemy.bossPhase * 2);
           burst(enemy.x, enemy.y, "#ff5e6c", 36, 150);
           floatingText(enemy.x, enemy.y - 42, "무리 소환", "#ff9aa3");
@@ -1498,14 +1499,17 @@
   }
 
   function spawnBossMinions(boss, count) {
+    let trailingOffset = 42;
     for (let i = 0; i < count; i++) {
       let type = "swarming";
       if (boss.bossPhase >= 1 && i % 3 === 0) type = "lurker";
       if (boss.bossPhase >= 2 && i % 5 === 0) type = "skitter";
       if (boss.bossPhase >= 3 && i % 7 === 0) type = "brute";
-      const minion = spawnEnemy(type);
-      minion.progress = Math.max(0, boss.progress - 38 - i * 5);
-      placeOnPath(minion);
+      const minion = spawnEnemy(type, {
+        progress: boss.progress - trailingOffset,
+      });
+      minion.phase = boss.phase + i * 0.35;
+      trailingOffset += minion.radius * 2 + 12;
     }
   }
 
