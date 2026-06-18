@@ -343,7 +343,7 @@
     { id: "rail", name: "레일 가속 포구", desc: "레일 스파이어 피해량이 레벨마다 8% 증가합니다.", max: 5, baseCost: 1, tier: 1 },
     { id: "gravity", name: "중력 우물 조율기", desc: "중력 앵커의 흡인 반경과 흡인력이 레벨마다 6% 증가합니다.", max: 5, baseCost: 1, tier: 1 },
     { id: "beacon", name: "비콘 증폭 회로", desc: "전술 비콘의 지원 피해와 주기 보정이 레벨마다 3%p 강화됩니다.", max: 5, baseCost: 1, tier: 1 },
-    { id: "ballistics", name: "탄도 가속기", desc: "발사체 속도가 레벨마다 8% 증가합니다.", max: 5, baseCost: 1, tier: 1 },
+    { id: "ballistics", name: "기초 사거리 보정", desc: "모든 타워의 사거리가 레벨마다 2% 증가합니다.", max: 5, baseCost: 1, tier: 1 },
 
     { id: "range", name: "궤도 조준 렌즈", desc: "모든 타워의 사거리가 레벨마다 4% 증가합니다.", max: 5, baseCost: 2, tier: 2, requires: { parents: [{ id: "ballistics", level: 2 }] } },
     { id: "cooldown", name: "과충전 회로", desc: "모든 타워의 공격 주기가 레벨마다 3% 짧아집니다.", max: 5, baseCost: 3, tier: 3, requires: { parents: [{ id: "range", level: 2 }] } },
@@ -390,7 +390,7 @@
     ],
     plasma: [
       { id: "wide", name: "대형 폭발", desc: "폭발 범위가 50% 증가합니다." },
-      { id: "acid", name: "산성 잔류장", desc: "폭발 범위의 50% 장판을 남기고 3초 동안 1초마다 피해를 줍니다." },
+      { id: "acid", name: "산성 잔류장", desc: "폭발 범위의 50% 장판을 남기고 2초 동안 1초마다 피해를 줍니다." },
     ],
     cryo: [
       { id: "freeze", name: "극저온 정지", desc: "감속이 추가로 10% 강화됩니다." },

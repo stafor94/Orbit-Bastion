@@ -674,7 +674,7 @@
       if (!supportSlot || !supportDef) continue;
       const supportRange = towerBaseRange(support.type, supportDef, support.level, support.branch)
         * slotBonuses(supportSlot).range
-        * (1 + (research.range || 0) * 0.04);
+        * (1 + (research.ballistics || 0) * 0.02 + (research.range || 0) * 0.04);
       if (dist(towerSlot, supportSlot) > supportRange) continue;
       damage += auraDamageBoost(supportDef, support.level, support.branch);
       cooldown -= auraCooldownBoost(supportDef, support.level, support.branch);
@@ -1106,11 +1106,11 @@
     const bonuses = slotBonuses(slot);
     const levelScale = 1 + (level - 1) * 0.42;
     const damageScale = (1 + (research[type] || 0) * 0.08) * (1 + (research.targeting || 0) * 0.02) * (1 + (research.allDamage || 0) * 0.04);
-    const rangeScale = 1 + (research.range || 0) * 0.04;
+    const rangeScale = 1 + (research.ballistics || 0) * 0.02 + (research.range || 0) * 0.04;
     const cooldownScale = Math.max(0.7, 1 - (research.cooldown || 0) * 0.03);
     const range = Math.round(towerBaseRange(type, def, level, branch) * bonuses.range * rangeScale);
     const baseDamage = def.damage * levelScale;
-    const damage = Math.round(baseDamage * damageScale * bonuses.damage * 10) / 10;
+    const damage = Math.floor(baseDamage * damageScale * bonuses.damage);
     const cooldown = def.cooldown ? Math.round(def.cooldown * (1 - (level - 1) * 0.08) * bonuses.cooldown * cooldownScale * 100) / 100 : 0;
     const splash = def.splash
       ? Math.round(def.splash * (1 + (level - 1) * 0.16 + research.plasma * 0.06 + (type === "plasma" && branch === "wide" ? 0.5 : 0)))
@@ -1191,7 +1191,7 @@
     const support = towerSupportBonuses(tower, slot, currentResearchLevels());
     return {
       ...stats,
-      damage: Math.round(stats.damage * support.damage * 10) / 10,
+      damage: Math.floor(stats.damage * support.damage),
       cooldown: stats.cooldown ? Math.round(stats.cooldown * support.cooldown * 100) / 100 : 0,
     };
   }
@@ -1203,7 +1203,7 @@
     const research = currentResearchLevels();
     const range = towerBaseRange("beacon", def, tower.level, tower.branch)
       * slotBonuses(slot).range
-      * (1 + (research.range || 0) * 0.04);
+      * (1 + (research.ballistics || 0) * 0.02 + (research.range || 0) * 0.04);
     return state.towers.filter((ally) => {
       if (ally === tower || ally.type === "beacon") return false;
       const allySlot = state.slots[ally.slotIndex];
@@ -1558,7 +1558,7 @@
       const levelScale = 1 + (tower.level - 1) * 0.42;
       const overdriveScale = state.waveActive ? 1 + (research.overdrive || 0) * 0.03 : 1;
       const damageResearch = (1 + (research[tower.type] || 0) * 0.08) * (1 + (research.targeting || 0) * 0.02) * (1 + (research.allDamage || 0) * 0.04) * overdriveScale * bonuses.damage * support.damage;
-      const rangeScale = 1 + (research.range || 0) * 0.04;
+      const rangeScale = 1 + (research.ballistics || 0) * 0.02 + (research.range || 0) * 0.04;
       const cooldownScale = Math.max(0.7, 1 - (research.cooldown || 0) * 0.03) * support.cooldown;
       const range = towerBaseRange(tower.type, def, tower.level, tower.branch) * bonuses.range * rangeScale;
       const priorityBossTarget = tower.type === "laser" && tower.branch === "overheat"
@@ -1720,7 +1720,7 @@
             y: slot.y + Math.sin(tower.angle) * 15 + Math.cos(tower.angle) * offset,
             target,
             damage: def.damage * levelScale * damageResearch,
-            speed: def.projectileSpeed * (1 + (research.ballistics || 0) * 0.08),
+            speed: def.projectileSpeed,
             splash: def.splash ? def.splash * (1 + (tower.level - 1) * 0.16 + research.plasma * 0.06 + (tower.branch === "wide" ? 0.5 : 0)) : 0,
             pullRadius: tower.type === "gravity" ? gravityPullRadiusForTower(def, tower.level, tower.branch) : 0,
             pullDuration: tower.type === "gravity" ? gravityPullDurationForTower(def, tower.level, tower.branch) : 0,
@@ -1775,7 +1775,7 @@
             if (d <= p.splash) dealDamage(enemy, p.damage * (1 - d / p.splash * 0.45), p.tower);
           }
           if (p.branch === "acid") {
-            state.acidPools.push({ x: p.target.x, y: p.target.y, radius: p.splash * 0.5, damage: p.damage * 0.25, life: 3, maxLife: 3, tick: 0 });
+            state.acidPools.push({ x: p.target.x, y: p.target.y, radius: p.splash * 0.5, damage: p.damage * 0.25, life: 2, maxLife: 2, tick: 0 });
           }
           burst(p.target.x, p.target.y, p.color, 46, 210);
           playSound("boom");
@@ -1803,7 +1803,6 @@
         pool.tick = 1;
         for (const enemy of state.enemies) {
           if (dist(pool, enemy) <= pool.radius) {
-            enemy.fracturedTimer = Math.max(enemy.fracturedTimer || 0, 0.35);
             dealDamage(enemy, pool.damage, null);
           }
         }
@@ -1976,7 +1975,7 @@
       },
       plasma: {
         wide: "폭발 반경 +50%",
-        acid: "현재 폭발 반경의 50% 산성 지대 3초 생성, 1초마다 피해의 25%와 받는 피해 +15%",
+        acid: "현재 폭발 반경의 50% 산성 지대 2초 생성, 1초마다 피해의 25%",
       },
       cryo: {
         freeze: "감속이 추가로 10% 강화됩니다.",
