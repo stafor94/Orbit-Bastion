@@ -38,7 +38,7 @@
       const waveInfo = waveOverview();
       const liveThreat = liveThreatOverview();
       ui.difficulty.textContent = difficulty.label;
-      ui.core.textContent = state.coreShieldMax > 0 ? `${state.core} +${state.coreShield}쉴드` : String(state.core);
+      ui.core.textContent = String(state.core);
       ui.alloy.textContent = String(Math.floor(state.alloy));
       ui.wave.textContent = `${Math.min(state.waveIndex + 1, state.waves.length)}/${state.waves.length || stage.waves}`;
       ui.stage.textContent = `${state.stageIndex + 1}. ${stage.name}`;

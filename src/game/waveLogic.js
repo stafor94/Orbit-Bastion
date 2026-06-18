@@ -37,6 +37,7 @@
         const pacingScale = wavePacingScale(state.stageIndex, wave.wave, waves.length);
         if (pacingScale !== 1) {
           for (const group of groups) {
+            if (ENEMY_DEFS[group.type]?.boss) continue;
             group.count = Math.max(1, Math.ceil(group.count * pacingScale));
           }
         }

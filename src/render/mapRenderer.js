@@ -122,6 +122,29 @@
     ctx.beginPath();
     ctx.arc(0, 0, 7, 0, Math.PI * 2);
     ctx.fill();
+
+    if (state.coreShieldMax > 0) {
+      const ratio = Math.max(0, Math.min(1, state.coreShield / state.coreShieldMax));
+      const width = 42;
+      const height = 6;
+      const x = -width / 2;
+      const y = 30;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#7de9ff";
+      ctx.fillStyle = "rgba(9, 18, 31, 0.82)";
+      ctx.strokeStyle = "rgba(125, 233, 255, 0.72)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, 3);
+      ctx.fill();
+      ctx.stroke();
+      if (ratio > 0) {
+        ctx.fillStyle = "rgba(125, 233, 255, 0.92)";
+        ctx.beginPath();
+        ctx.roundRect(x + 1, y + 1, Math.max(2, (width - 2) * ratio), height - 2, 2);
+        ctx.fill();
+      }
+    }
     ctx.restore();
   }
 

@@ -84,7 +84,7 @@
         case "cryo":
           return `감속 강도 +${level * 3}%p`;
         case "ballistics":
-          return `투사체 속도 +${level * 8}%`;
+          return `모든 타워 사거리 +${level * 2}%`;
         case "range":
           return `모든 타워 사거리 +${level * 4}%`;
         case "cooldown":
