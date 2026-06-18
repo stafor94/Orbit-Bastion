@@ -24,7 +24,7 @@
     rail: { name: "레일 가속 장치", category: "offense", appliesTo: ["레일 스파이어"], summary: "관통 타격의 단발 화력을 강화합니다." },
     gravity: { name: "중력 왜곡 조율기", category: "control", appliesTo: ["중력 앵커"], summary: "흡인 반경과 강도를 함께 강화합니다." },
     beacon: { name: "비콘 증폭 회로", category: "tactics", appliesTo: ["전술 비콘"], summary: "지원 피해와 공격 주기 보정을 동시에 끌어올립니다." },
-    ballistics: { name: "탄도 가속기", category: "tactics", appliesTo: ["투사체 타워"], summary: "투사체 속도를 높여 명중 안정성을 올립니다." },
+    ballistics: { name: "기초 사거리 보정", category: "tactics", appliesTo: ["모든 타워"], summary: "초기 조준 보정으로 모든 타워의 기본 사거리를 넓힙니다." },
     range: { name: "궤도 조준 튜닝", category: "tactics", appliesTo: ["모든 타워"], summary: "사거리를 늘려 유효 화망을 넓힙니다." },
     cooldown: { name: "과충전 회로", category: "tactics", appliesTo: ["모든 타워"], summary: "공격 주기를 줄여 전반적인 처리량을 높입니다." },
     armorPierce: { name: "장갑 관통 제어", category: "offense", appliesTo: ["방어형 적 대응"], summary: "적 장갑을 고정 수치로 낮춰 피해 손실을 줄입니다." },
