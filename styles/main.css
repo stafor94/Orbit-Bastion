@@ -87,6 +87,7 @@ button:focus-visible {
 }
 
 .topbar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -355,22 +356,30 @@ button:focus-visible {
 }
 
 .boss-hud {
-  position: static;
-  z-index: 2;
-  order: 4;
-  flex: 0 0 100%;
-  display: none;
-  margin-top: 0;
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  z-index: 4;
+  display: grid;
   padding: 7px 9px;
   border: 1px solid rgba(255, 94, 108, 0.45);
   border-radius: 8px;
   background: rgba(13, 7, 13, 0.76);
   box-shadow: 0 0 24px rgba(255, 94, 108, 0.18);
   backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  visibility: hidden;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
 }
 
 .boss-hud.active {
-  display: grid;
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 .boss-hud-top {
