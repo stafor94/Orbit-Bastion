@@ -45,6 +45,11 @@
       const liveThreat = liveThreatOverview();
       ui.difficulty.textContent = difficulty.label;
       ui.core.textContent = String(state.core);
+      if (ui.coreShield) {
+        const hasShield = state.coreShieldMax > 0;
+        ui.coreShield.textContent = hasShield ? `쉴드 ${state.coreShield}/${state.coreShieldMax}` : "쉴드 0/0";
+        ui.coreShield.classList.toggle("hidden", !hasShield);
+      }
       ui.alloy.textContent = String(Math.floor(state.alloy));
       ui.wave.textContent = `${Math.min(state.waveIndex + 1, state.waves.length)}/${state.waves.length || stage.waves}`;
       ui.stage.textContent = `${state.stageIndex + 1}. ${stage.name}`;

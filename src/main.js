@@ -8,6 +8,7 @@
   const ctx = canvas.getContext("2d");
   const ui = {
     core: $("coreValue"),
+    coreShield: $("coreShieldValue"),
     difficulty: $("difficultyValue"),
     alloy: $("alloyValue"),
     wave: $("waveValue"),
