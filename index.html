@@ -41,12 +41,6 @@
           </div>
         </div>
         <button id="soundButton" class="sound-toggle" type="button" aria-label="소리 켜짐" title="소리 켜짐"></button>
-      </section>
-
-      <section class="battle-shell" aria-label="전장">
-        <canvas id="gameCanvas" role="img" aria-label="타워와 적 이동 경로가 표시되는 전장 캔버스"></canvas>
-        <canvas id="fxCanvas" aria-hidden="true"></canvas>
-        <div id="floatingTextLayer" class="floating-text-layer"></div>
         <div id="bossHud" class="boss-hud" aria-live="polite">
           <div class="boss-hud-top">
             <strong id="bossName">브루드 콜로서스</strong>
@@ -55,6 +49,12 @@
           <div class="boss-bar"><span id="bossBarFill"></span></div>
           <div id="bossTelemetry" class="boss-telemetry">보스 출현 전</div>
         </div>
+      </section>
+
+      <section class="battle-shell" aria-label="전장">
+        <canvas id="gameCanvas" role="img" aria-label="타워와 적 이동 경로가 표시되는 전장 캔버스"></canvas>
+        <canvas id="fxCanvas" aria-hidden="true"></canvas>
+        <div id="floatingTextLayer" class="floating-text-layer"></div>
         <div id="bossWarning" class="boss-warning" role="alert" aria-live="assertive">
           <strong id="bossWarningTitle">거대 생체 신호 접근</strong>
           <span id="bossWarningDetail">보스 출현에 대비해 화력을 정비하세요.</span>
