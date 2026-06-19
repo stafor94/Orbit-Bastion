@@ -72,6 +72,10 @@ STAGE_RULES.forEach((rule, index) => {
   if (rule.bossCooldown !== undefined) {
     assert.ok(rule.bossCooldown > 0 && rule.bossCooldown <= 1, `${label} boss cooldown scale must be 0 < value <= 1`);
   }
+  if (rule.bossType !== undefined) {
+    assert.ok(enemyTypes.has(rule.bossType), `${label} boss type references unknown enemy type: ${rule.bossType}`);
+    assert.ok(ENEMY_DEFS[rule.bossType].boss, `${label} boss type must reference a boss enemy: ${rule.bossType}`);
+  }
 });
 
 for (const [type, tower] of Object.entries(TOWER_DEFS)) {
@@ -88,6 +92,18 @@ for (const enemy of Object.values(ENEMY_DEFS)) {
   assert.ok(enemy.hp > 0, `${enemy.name} must have positive hp`);
   assert.ok(enemy.speed >= 0, `${enemy.name} must have non-negative speed`);
   assert.ok(enemy.reward >= 0, `${enemy.name} must have non-negative reward`);
+  if (enemy.shieldRegen) {
+    assert.ok(enemy.shieldRegen.amount > 0, `${enemy.name} shield regen amount must be positive`);
+    assert.ok(enemy.shieldRegen.interval > 0, `${enemy.name} shield regen interval must be positive`);
+    assert.ok(enemy.shieldRegen.cap > 0 && enemy.shieldRegen.cap <= 1, `${enemy.name} shield regen cap must be 0 < cap <= 1`);
+  }
+  if (enemy.phaseSpeed) {
+    assert.equal(enemy.phaseSpeed.length, 4, `${enemy.name} must define four boss phase speed multipliers`);
+    enemy.phaseSpeed.forEach((speed) => assert.ok(speed > 0, `${enemy.name} phase speed multiplier must be positive`));
+  }
+  for (const minion of enemy.minions || []) {
+    assert.ok(enemyTypes.has(minion), `${enemy.name} references unknown minion type: ${minion}`);
+  }
 }
 
 for (const def of RESEARCH_DEFS) {
