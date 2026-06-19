@@ -86,6 +86,32 @@
       hiddenInRoster: true,
     },
     colossus: { name: "브루드 콜로서스", hp: 3750, speed: 19, reward: 50, radius: 28, color: "#ff5e6c", armor: 10, boss: true },
+    shieldmatron: {
+      name: "실드 매트론",
+      hp: 3150,
+      speed: 17,
+      reward: 55,
+      radius: 27,
+      color: "#72f7ff",
+      armor: 8,
+      boss: true,
+      shieldRegen: { amount: 90, interval: 5.5, cap: 0.32 },
+      minions: ["shellguard", "lurker", "swarming"],
+      special: "주기적으로 보호막을 재생하고 갑각 호위 병력을 부릅니다.",
+    },
+    riftbehemoth: {
+      name: "균열 베히모스",
+      hp: 2850,
+      speed: 24,
+      reward: 58,
+      radius: 26,
+      color: "#ffc85a",
+      armor: 6,
+      boss: true,
+      phaseSpeed: [1, 1.12, 1.26, 1.45],
+      minions: ["venomrunner", "skitter", "brute"],
+      special: "페이즈가 오를수록 이동 속도가 빨라지고 고속 병력을 동반합니다.",
+    },
   };
 
   const STAGES = [
@@ -298,6 +324,7 @@
       group: { swarming: 1.4, skitter: 1.35, brute: 1.5, lurker: 1.25 },
       hp: {},
       bossCooldown: 0.72,
+      bossType: "shieldmatron",
       extraGroups: [
         { wave: 7, type: "swarming", count: 10, gap: 0.16 },
         { wave: 6, type: "brute", count: 2, gap: 0.9 },
@@ -309,6 +336,7 @@
       group: { swarming: 1.5, skitter: 1.45, brute: 1.35, lurker: 1.3 },
       hp: {},
       bossCooldown: 0.66,
+      bossType: "riftbehemoth",
       extraGroups: [
         { wave: 6, type: "skitter", count: 8, gap: 0.24 },
         { wave: 7, type: "brute", count: 2, gap: 0.85 },
@@ -320,6 +348,7 @@
       group: { swarming: 1.65, skitter: 1.5, brute: 1.55, lurker: 1.35 },
       hp: {},
       bossCooldown: 0.58,
+      bossType: "riftbehemoth",
       extraGroups: [
         { wave: 7, type: "swarming", count: 12, gap: 0.14 },
         { wave: 6, type: "brute", count: 3, gap: 0.82 },
