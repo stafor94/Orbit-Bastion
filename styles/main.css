@@ -256,6 +256,20 @@ button:focus-visible {
   line-height: 1;
 }
 
+.status-subvalue {
+  display: block;
+  margin-top: 3px;
+  color: #9ccfff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-subvalue.hidden {
+  display: none;
+}
+
 .battle-shell {
   position: relative;
   min-height: 0;
