@@ -59,6 +59,7 @@
         lurker: "#7dff8b",
         skitter: "#78d7ff",
         brute: "#d6e7ff",
+        ironclad: "#b8c7d9",
         swarming: "#9df58f",
         broodcarrier: "#ffc88e",
         broodcocoon: "#ffd9a8",
@@ -80,6 +81,12 @@
           <path d="M14 31 L11 38 M32 31 L35 38 M13 20 L8 18 M35 23 L40 24" stroke="${accent}" stroke-width="2.2" stroke-linecap="round"/>
           <circle cx="21" cy="22" r="2.2" fill="#ffffff"/>
           <circle cx="27" cy="21" r="1.8" fill="#ffffff"/>
+        `,
+        ironclad: `
+          <path d="M9 26 L14 15 L26 11 L38 18 L40 30 L31 38 L16 36 Z" fill="${accent}" fill-opacity="0.18" stroke="${accent}" stroke-width="2.4" stroke-linejoin="round"/>
+          <path d="M16 18 L32 16 M14 27 L38 27 M18 35 L30 35" stroke="${accent}" stroke-width="2" stroke-linecap="round"/>
+          <path d="M17 20 L15 33 M24 16 L24 36 M32 20 L34 32" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="24" cy="23" r="2.4" fill="#ffffff"/>
         `,
         swarming: `
           <path d="M12 27 L22 20 L35 24 L30 31 L18 33 Z" fill="${accent}" fill-opacity="0.15" stroke="${accent}" stroke-width="2" stroke-linejoin="round"/>

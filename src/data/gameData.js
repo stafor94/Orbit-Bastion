@@ -58,6 +58,7 @@
     venomrunner: { name: "베놈 러너", hp: 58, speed: 70, reward: 5, radius: 10, color: "#b6ff35", armor: 0, enrage: { threshold: 0.45, speed: 1.45 } },
     brute: { name: "브루트", hp: 180, speed: 32, reward: 10, radius: 17, color: "#45d188", armor: 3 },
     shellguard: { name: "갑각 수호체", hp: 300, speed: 30, reward: 13, radius: 18, color: "#6ec8ff", armor: 10, guardAura: { radius: 80, armor: 3 } },
+    ironclad: { name: "철갑 타이탄", hp: 520, speed: 22, reward: 18, radius: 22, color: "#b8c7d9", armor: 18, special: "느리지만 거대하고 두꺼운 장갑으로 전선을 밀어붙이는 중장 개체입니다." },
     swarming: { name: "스웜링", hp: 24, speed: 63, reward: 2, radius: 7, color: "#a1ffcf", armor: 0 },
     broodcarrier: {
       name: "기생 운반체",
@@ -333,19 +334,20 @@
     {
       summary: "하이브 외곽 차단선에서 강화된 혼성 군단이 다중 구역을 압박합니다.",
       rule: "혼성 공세 증폭",
-      group: { swarming: 1.5, skitter: 1.45, brute: 1.35, lurker: 1.3 },
+      group: { swarming: 1.5, skitter: 1.45, brute: 1.35, lurker: 1.3, ironclad: 1.2 },
       hp: {},
       bossCooldown: 0.66,
       bossType: "riftbehemoth",
       extraGroups: [
         { wave: 6, type: "skitter", count: 8, gap: 0.24 },
         { wave: 7, type: "brute", count: 2, gap: 0.85 },
+        { wave: 8, type: "ironclad", count: 1, gap: 1.4 },
       ],
     },
     {
       summary: "군락 심장실에서 모든 개체와 중무장 파동이 연속 투입됩니다.",
       rule: "최종 붕괴 전선",
-      group: { swarming: 1.65, skitter: 1.5, brute: 1.55, lurker: 1.35 },
+      group: { swarming: 1.65, skitter: 1.5, brute: 1.55, lurker: 1.35, ironclad: 1.35 },
       hp: {},
       bossCooldown: 0.58,
       bossType: "riftbehemoth",
@@ -353,6 +355,7 @@
         { wave: 7, type: "swarming", count: 12, gap: 0.14 },
         { wave: 6, type: "brute", count: 3, gap: 0.82 },
         { wave: 9, type: "skitter", count: 10, gap: 0.22 },
+        { wave: 8, type: "ironclad", count: 2, gap: 1.35 },
       ],
     },
   ];
