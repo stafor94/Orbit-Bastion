@@ -68,6 +68,7 @@
       const swarmingStart = [99, 99, 99, 8, 6, 7, 7, 7, 8, 8];
       const shellguardStart = [99, 99, 99, 99, 99, 8, 8, 7, 7, 6];
       const broodcarrierStart = [99, 99, 99, 99, 8, 8, 8, 8, 9, 9];
+      const ironcladStart = [99, 99, 99, 99, 99, 99, 99, 99, 8, 7];
       const index = Math.max(0, Math.min(stageIndex, skitterStart.length - 1));
       return {
         skitterStart: skitterStart[index],
@@ -76,6 +77,7 @@
         swarmingStart: swarmingStart[index],
         shellguardStart: shellguardStart[index],
         broodcarrierStart: broodcarrierStart[index],
+        ironcladStart: ironcladStart[index],
         bossEnabled: true,
       };
     }
@@ -98,7 +100,8 @@
         if (w >= mix.swarmingStart) groups.push({ type: "swarming", count: 10 + Math.round(effectiveWave * 2), gap: 0.26 });
         if (w >= mix.shellguardStart) groups.push({ type: "shellguard", count: Math.max(1, Math.floor(effectiveWave * 0.28)), gap: 1.35 });
         if (w >= mix.broodcarrierStart) groups.push({ type: "broodcarrier", count: Math.max(1, Math.floor(effectiveWave * 0.45)), gap: 0.95 });
-        if (mix.bossEnabled && w === stage.waves) groups.push({ type: "colossus", count: 1, gap: 0.15 });
+        if (w >= mix.ironcladStart) groups.push({ type: "ironclad", count: Math.max(1, Math.floor(effectiveWave * 0.22)), gap: 1.55 });
+        if (mix.bossEnabled && w === stage.waves) groups.push({ type: stageRule().bossType || "colossus", count: 1, gap: 0.15 });
         state.waves.push({ wave: w, groups, reward: 18 + w * 4 });
       }
       state.waves = applyStageRulesToWaves(state.waves);
@@ -157,6 +160,8 @@
       if (def.hp <= 30) tags.push({ text: "군체", tone: "default" });
       if (def.enrage) tags.push({ text: "광폭 질주", tone: "alert" });
       if (def.guardAura) tags.push({ text: "방호 오라", tone: "armor" });
+      if (def.shieldRegen) tags.push({ text: "보호막 재생", tone: "control" });
+      if (def.phaseSpeed) tags.push({ text: "페이즈 가속", tone: "alert" });
       if (def.cocoon) tags.push({ text: "처치 시 고치", tone: "alert" });
       return tags;
     }
@@ -164,6 +169,9 @@
     function enemySpecialText(type, def, hpScale = 1) {
       if (def?.enrage) return `체력 ${Math.round(def.enrage.threshold * 100)}% 이하에서 이동 속도 ${formatPreviewNumber(def.enrage.speed, 2)}배`;
       if (def?.guardAura) return `주변 ${def.guardAura.radius}px 적에게 장갑 +${def.guardAura.armor} 부여`;
+      if (def?.shieldRegen) return `최대 체력 ${Math.round(def.shieldRegen.cap * 100)}%까지 ${formatPreviewNumber(def.shieldRegen.interval, 1)}초마다 보호막 재생`;
+      if (def?.phaseSpeed) return `페이즈별 이동 속도 최대 ${formatPreviewNumber(def.phaseSpeed.at(-1), 2)}배`;
+      if (def?.special) return def.special;
       if (!def?.cocoon) return "";
       const hatchText = def.cocoon.hatchGroups
         .map((group) => `${ENEMY_DEFS[group.type]?.name || group.type} ${group.count}기`)

@@ -939,6 +939,7 @@
       fracturedTimer: 0,
       markedTimer: 0,
       spawnCooldown: def.boss ? BOSS_MINION_BASE_COOLDOWN : 0,
+      shieldRegenTimer: def.shieldRegen?.interval || 0,
       bossPhase: 0,
       bossAnnounced: false,
       phase: Math.random() * 10,
@@ -1409,7 +1410,8 @@
         floatingText(enemy.x, enemy.y - 20, "광폭 질주", "#dfff62");
       }
       const enrageSpeed = enrageActive ? def.enrage.speed : 1;
-      const motionFactor = enemy.stunTimer > 0 ? 0 : enemy.slowFactor * enrageSpeed;
+      const bossPhaseSpeed = def.phaseSpeed?.[enemy.bossPhase || 0] || 1;
+      const motionFactor = enemy.stunTimer > 0 ? 0 : enemy.slowFactor * enrageSpeed * bossPhaseSpeed;
       if (def.cocoonBody) {
         enemy.hatchTimer = Math.max(0, (enemy.hatchTimer || 0) - dt);
         if (enemy.hatchTimer <= 0 && !enemy.dead) {
@@ -1447,12 +1449,25 @@
           enemy.bossPhase = nextPhase;
           triggerBossPhase(enemy, nextPhase);
         }
+        if (def.shieldRegen) {
+          enemy.shieldRegenTimer = Math.max(0, (enemy.shieldRegenTimer || def.shieldRegen.interval) - dt);
+          const shieldCap = enemy.maxHp * def.shieldRegen.cap;
+          if (enemy.shieldRegenTimer <= 0) {
+            enemy.shieldRegenTimer = Math.max(1, def.shieldRegen.interval - enemy.bossPhase * 0.45);
+            if (enemy.hp < shieldCap) {
+              const before = enemy.hp;
+              enemy.hp = Math.min(shieldCap, enemy.hp + def.shieldRegen.amount * (1 + enemy.bossPhase * 0.25));
+              burst(enemy.x, enemy.y, def.color, 28 + enemy.bossPhase * 8, 130);
+              floatingText(enemy.x, enemy.y - 46, `보호막 +${Math.ceil(enemy.hp - before)}`, "#baf4ff");
+            }
+          }
+        }
         enemy.spawnCooldown -= dt;
         if (enemy.spawnCooldown <= 0) {
           enemy.spawnCooldown = Math.max(7.5, BOSS_MINION_BASE_COOLDOWN - state.waveIndex * 0.2 - enemy.bossPhase * 0.55) * (stageRule().bossCooldown || 1);
           spawnBossMinions(enemy, 5 + enemy.bossPhase * 2);
-          burst(enemy.x, enemy.y, "#ff5e6c", 36, 150);
-          floatingText(enemy.x, enemy.y - 42, "무리 소환", "#ff9aa3");
+          burst(enemy.x, enemy.y, def.color || "#ff5e6c", 36, 150);
+          floatingText(enemy.x, enemy.y - 42, def.shieldRegen ? "호위 소환" : def.phaseSpeed ? "균열 증원" : "무리 소환", "#ff9aa3");
         }
       }
 
@@ -1486,15 +1501,16 @@
 
   function triggerBossPhase(enemy, phase) {
     const labels = ["", "증원 개시", "압박 증대", "최후 공세"];
+    const def = ENEMY_DEFS[enemy.type] || {};
     const details = [
       "",
-      "보스가 지원 병력을 더 자주 소환합니다.",
-      "전장의 압박이 강해지고 돌파 속도가 빨라집니다.",
-      "콜로서스가 마지막 물량 공세를 시작합니다.",
+      def.shieldRegen ? "보스의 보호막 재생과 호위 호출이 강화됩니다." : "보스가 지원 병력을 더 자주 소환합니다.",
+      def.phaseSpeed ? "균열 에너지로 이동 속도가 빨라집니다." : "전장의 압박이 강해지고 돌파 속도가 빨라집니다.",
+      def.shieldRegen ? "매트론이 마지막 보호막 공세를 시작합니다." : def.phaseSpeed ? "베히모스가 최종 돌진 태세에 들어갑니다." : "콜로서스가 마지막 물량 공세를 시작합니다.",
     ];
     state.shock = Math.max(state.shock, 0.85);
     enemy.spawnCooldown = Math.min(enemy.spawnCooldown, 1.2);
-    burst(enemy.x, enemy.y, "#ff5e6c", 70 + phase * 18, 250);
+    burst(enemy.x, enemy.y, def.color || "#ff5e6c", 70 + phase * 18, 250);
     floatingText(enemy.x, enemy.y - 58, labels[phase], "#ffc85a");
     showBossWarning(labels[phase], details[phase]);
     spawnBossMinions(enemy, 3 + phase * 3);
@@ -1503,10 +1519,12 @@
   function spawnBossMinions(boss, count) {
     let trailingOffset = 42;
     for (let i = 0; i < count; i++) {
-      let type = "swarming";
-      if (boss.bossPhase >= 1 && i % 3 === 0) type = "lurker";
-      if (boss.bossPhase >= 2 && i % 5 === 0) type = "skitter";
-      if (boss.bossPhase >= 3 && i % 7 === 0) type = "brute";
+      const bossDef = ENEMY_DEFS[boss.type] || {};
+      const minionPool = bossDef.minions || ["swarming", "lurker", "skitter", "brute"];
+      let type = minionPool[0] || "swarming";
+      if (boss.bossPhase >= 1 && i % 3 === 0) type = minionPool[1] || "lurker";
+      if (boss.bossPhase >= 2 && i % 5 === 0) type = minionPool[2] || "skitter";
+      if (boss.bossPhase >= 3 && i % 7 === 0) type = minionPool[3] || "brute";
       const minion = spawnEnemy(type, {
         progress: boss.progress - trailingOffset,
       });
@@ -1525,8 +1543,8 @@
     const hpRatio = Math.max(0, boss.hp / boss.maxHp);
     const phaseNames = ["1단계", "2단계", "3단계", "최종 단계"];
     const telemetry = [];
-    if (boss.bossPhase >= 1) telemetry.push("추가 소환 강화");
-    if (boss.bossPhase >= 2) telemetry.push("압박 증가");
+    if (boss.bossPhase >= 1) telemetry.push(def.shieldRegen ? "보호막 강화" : "추가 소환 강화");
+    if (boss.bossPhase >= 2) telemetry.push(def.phaseSpeed ? "균열 가속" : "압박 증가");
     if (boss.bossPhase >= 3) telemetry.push("최후 공세");
     const armor = enemyArmorValue(def);
     if (armor > 0) telemetry.push(`장갑 ${armor}`);

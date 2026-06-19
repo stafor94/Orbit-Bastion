@@ -159,6 +159,9 @@
         case "shellguard":
           drawShellGuard(enemy, def, hpT);
           break;
+        case "ironclad":
+          drawIronclad(enemy, def, hpT);
+          break;
         case "swarming":
           drawSwarming(enemy, def, hpT);
           break;
@@ -339,6 +342,28 @@
         ctx.lineTo(side * r * 0.65, r * 0.55);
         ctx.stroke();
       }
+    }
+
+    function drawIronclad(enemy, def, hpT) {
+      drawBrute(enemy, def, hpT);
+      const r = enemy.radius;
+      ctx.fillStyle = "rgba(184, 199, 217, 0.26)";
+      ctx.strokeStyle = "rgba(238, 246, 255, 0.78)";
+      ctx.lineWidth = 2.4;
+      for (const x of [-0.48, 0, 0.48]) {
+        ctx.beginPath();
+        ctx.roundRect(x * r - r * 0.22, -r * 0.58, r * 0.44, r * 0.9, r * 0.08);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(125, 233, 255, 0.5)";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.78, -r * 0.78);
+      ctx.lineTo(r * 0.78, -r * 0.78);
+      ctx.moveTo(-r * 0.9, r * 0.55);
+      ctx.lineTo(r * 0.9, r * 0.55);
+      ctx.stroke();
     }
 
     function drawSwarming(enemy, def, hpT) {

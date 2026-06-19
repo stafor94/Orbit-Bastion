@@ -51,6 +51,7 @@
         lurker: "러커",
         skitter: "스키터",
         brute: "브루트",
+        ironclad: "철갑",
         swarming: "스워밍",
         colossus: "콜로서스",
       };
