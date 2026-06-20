@@ -747,6 +747,13 @@
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return null;
       state.audio = new AudioContext();
+      state.audioMaster = state.audio.createDynamicsCompressor();
+      state.audioMaster.threshold.setValueAtTime(-18, state.audio.currentTime);
+      state.audioMaster.knee.setValueAtTime(18, state.audio.currentTime);
+      state.audioMaster.ratio.setValueAtTime(8, state.audio.currentTime);
+      state.audioMaster.attack.setValueAtTime(0.004, state.audio.currentTime);
+      state.audioMaster.release.setValueAtTime(0.18, state.audio.currentTime);
+      state.audioMaster.connect(state.audio.destination);
     }
     if (state.audio.state === "suspended") state.audio.resume();
     return state.audio;
@@ -782,29 +789,150 @@
     if (!audio) return;
     const t = audio.currentTime;
     const presets = {
-      click: { f: 620, to: 420, d: 0.045, v: 0.018, type: "sine", filter: 2200 },
-      deploy: { f: 220, to: 360, d: 0.13, v: 0.045, type: "triangle", filter: 1800 },
-      shoot: { f: 760, to: 520, d: 0.055, v: 0.018, type: "triangle", filter: 2600 },
-      pulse: { f: 880, to: 540, d: 0.07, v: 0.022, type: "triangle", filter: 2800 },
-      laser: { f: 1240, to: 920, d: 0.09, v: 0.018, type: "sawtooth", filter: 3600 },
-      plasma: { f: 180, to: 92, d: 0.24, v: 0.052, type: "sine", filter: 760, noise: 0.022 },
-      cryo: { f: 520, to: 760, d: 0.18, v: 0.024, type: "sine", filter: 3200 },
-      arc: { f: 1180, to: 360, d: 0.12, v: 0.028, type: "square", filter: 4200, noise: 0.012 },
-      rail: { f: 1320, to: 160, d: 0.2, v: 0.046, type: "triangle", filter: 3000, noise: 0.018 },
-      gravity: { f: 96, to: 48, d: 0.42, v: 0.04, type: "sine", filter: 520, noise: 0.014 },
-      beacon: { f: 430, to: 760, d: 0.2, v: 0.032, type: "triangle", filter: 2400 },
-      boom: { f: 120, to: 48, d: 0.26, v: 0.07, type: "sine", filter: 680, noise: 0.035 },
+      click: { layers: [{ f: 880, to: 520, d: 0.045, v: 0.014, type: "triangle", filter: 3200 }] },
+      deploy: {
+        layers: [
+          { f: 180, to: 280, d: 0.12, v: 0.03, type: "triangle", filter: 1600 },
+          { f: 720, to: 1120, d: 0.08, v: 0.012, type: "sine", filter: 4200, delay: 0.035 },
+        ],
+        noise: 0.012,
+      },
+      shoot: {
+        layers: [
+          { f: 980, to: 520, d: 0.055, v: 0.016, type: "triangle", filter: 3000 },
+          { f: 150, to: 90, d: 0.08, v: 0.012, type: "sine", filter: 900 },
+        ],
+      },
+      pulse: {
+        layers: [
+          { f: 880, to: 430, d: 0.075, v: 0.018, type: "triangle", filter: 2800 },
+          { f: 1320, to: 760, d: 0.045, v: 0.008, type: "sine", filter: 5200, delay: 0.018 },
+        ],
+      },
+      laser: {
+        layers: [
+          { f: 1800, to: 1180, d: 0.08, v: 0.013, type: "sawtooth", filter: 5200, q: 8 },
+          { f: 920, to: 860, d: 0.12, v: 0.008, type: "sine", filter: 3600, delay: 0.012 },
+        ],
+        noise: 0.006,
+        noiseFilterType: "bandpass",
+      },
+      plasma: {
+        layers: [
+          { f: 110, to: 54, d: 0.32, v: 0.04, type: "sine", filter: 620 },
+          { f: 260, to: 140, d: 0.22, v: 0.02, type: "sawtooth", filter: 920, delay: 0.025 },
+        ],
+        noise: 0.03,
+      },
+      cryo: {
+        layers: [
+          { f: 520, to: 860, d: 0.18, v: 0.016, type: "sine", filter: 3400 },
+          { f: 1760, to: 2400, d: 0.11, v: 0.006, type: "triangle", filter: 6200, delay: 0.04 },
+        ],
+        noise: 0.01,
+        noiseFilterType: "highpass",
+      },
+      arc: {
+        layers: [
+          { f: 1240, to: 280, d: 0.09, v: 0.018, type: "square", filter: 4600, q: 10 },
+          { f: 1840, to: 520, d: 0.055, v: 0.012, type: "sawtooth", filter: 7000, delay: 0.025 },
+        ],
+        noise: 0.02,
+        noiseFilterType: "bandpass",
+      },
+      rail: {
+        layers: [
+          { f: 90, to: 52, d: 0.18, v: 0.042, type: "sine", filter: 700 },
+          { f: 2200, to: 340, d: 0.12, v: 0.02, type: "triangle", filter: 3400, delay: 0.018 },
+        ],
+        noise: 0.035,
+      },
+      gravity: {
+        layers: [
+          { f: 72, to: 36, d: 0.5, v: 0.04, type: "sine", filter: 440 },
+          { f: 144, to: 72, d: 0.42, v: 0.018, type: "triangle", filter: 620, delay: 0.08 },
+        ],
+        noise: 0.012,
+      },
+      beacon: {
+        sequence: [430, 645, 860],
+        step: 0.07,
+        d: 0.15,
+        v: 0.018,
+        type: "triangle",
+        filter: 2600,
+        harmony: 1.5,
+      },
+      boom: {
+        layers: [
+          { f: 118, to: 42, d: 0.3, v: 0.06, type: "sine", filter: 620 },
+          { f: 64, to: 38, d: 0.44, v: 0.035, type: "triangle", filter: 360 },
+        ],
+        noise: 0.05,
+      },
       boss: { f: 82, to: 36, d: 0.55, v: 0.1, type: "sine", filter: 520, noise: 0.055 },
-      bossIntro: { sequence: [110, 82, 73, 55, 82], step: 0.18, d: 0.22, v: 0.062, type: "sawtooth", filter: 780, noise: 0.035 },
-      victory: { sequence: [392, 523, 659, 784], step: 0.13, d: 0.24, v: 0.045, type: "triangle", filter: 2600 },
-      defeat: { sequence: [220, 185, 147, 110], step: 0.18, d: 0.32, v: 0.052, type: "sine", filter: 900, noise: 0.024 },
-      upgrade: { f: 360, to: 720, d: 0.22, v: 0.05, type: "triangle", filter: 2400 },
-      error: { f: 150, to: 95, d: 0.16, v: 0.035, type: "sine", filter: 900 },
+      bossIntro: {
+        sequence: [110, 82, 73, 55, 82, 55],
+        step: 0.2,
+        d: 0.28,
+        v: 0.044,
+        type: "sawtooth",
+        filter: 820,
+        harmony: 0.5,
+        noise: 0.032,
+      },
+      victory: {
+        sequence: [392, 523, 659, 784, 1047],
+        step: 0.12,
+        d: 0.28,
+        v: 0.032,
+        type: "triangle",
+        filter: 3200,
+        harmony: 1.25,
+      },
+      defeat: {
+        sequence: [220, 185, 147, 110, 82],
+        step: 0.18,
+        d: 0.36,
+        v: 0.044,
+        type: "sine",
+        filter: 900,
+        harmony: 0.5,
+        noise: 0.026,
+      },
+      upgrade: {
+        sequence: [360, 540, 720],
+        step: 0.075,
+        d: 0.16,
+        v: 0.027,
+        type: "triangle",
+        filter: 2800,
+        harmony: 1.5,
+      },
+      error: {
+        layers: [
+          { f: 150, to: 95, d: 0.16, v: 0.028, type: "sawtooth", filter: 900 },
+          { f: 75, to: 55, d: 0.18, v: 0.018, type: "sine", filter: 420, delay: 0.04 },
+        ],
+      },
     };
     const s = presets[name] || presets.click;
     if (s.sequence) playSequence(audio, t, s);
+    else if (s.layers) playLayers(audio, t, s.layers);
     else playTone(audio, t, s);
-    if (s.noise) playNoise(audio, t, s.d * 0.8, s.noise, s.filter);
+    if (s.noise) playNoise(audio, t, (s.d || 0.18) * 0.8, s.noise, s.filter || 1800, s.noiseFilterType);
+  }
+
+  function playSequence(audio, startTime, s) {
+    s.sequence.forEach((frequency, index) => {
+      const t = startTime + index * s.step;
+      playTone(audio, t, { ...s, f: frequency, to: frequency * 0.72 });
+      if (s.harmony) playTone(audio, t + 0.012, { ...s, f: frequency * s.harmony, to: frequency * s.harmony * 0.72, v: s.v * 0.45 });
+    });
+  }
+
+  function playLayers(audio, startTime, layers) {
+    layers.forEach((layer) => playTone(audio, startTime + (layer.delay || 0), layer));
   }
 
   function playSequence(audio, startTime, s) {
@@ -828,19 +956,20 @@
     osc.type = s.type;
     osc.frequency.setValueAtTime(s.f, t);
     osc.frequency.exponentialRampToValueAtTime(Math.max(30, s.to), t + s.d);
-    filter.type = "lowpass";
+    filter.type = s.filterType || "lowpass";
     filter.frequency.setValueAtTime(s.filter, t);
+    filter.Q.setValueAtTime(s.q || 1, t);
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(s.v, t + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + s.d);
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(audio.destination);
+    gain.connect(state.audioMaster || audio.destination);
     osc.start(t);
     osc.stop(t + s.d + 0.03);
   }
 
-  function playNoise(audio, t, duration, volume, filterFreq) {
+  function playNoise(audio, t, duration, volume, filterFreq, filterType = "lowpass") {
     const length = Math.max(1, Math.floor(audio.sampleRate * duration));
     const buffer = audio.createBuffer(1, length, audio.sampleRate);
     const data = buffer.getChannelData(0);
@@ -849,13 +978,13 @@
     const gain = audio.createGain();
     const filter = audio.createBiquadFilter();
     source.buffer = buffer;
-    filter.type = "lowpass";
+    filter.type = filterType;
     filter.frequency.setValueAtTime(filterFreq, t);
     gain.gain.setValueAtTime(volume, t);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
     source.connect(filter);
     filter.connect(gain);
-    gain.connect(audio.destination);
+    gain.connect(state.audioMaster || audio.destination);
     source.start(t);
     source.stop(t + duration);
   }
