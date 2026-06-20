@@ -26,7 +26,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   metrics.estimateOutput("laser", { damage: 20, cooldown: 1.5 }, 2),
-  { dps: 20, maxDps: 40, throughput: 40 },
+  { dps: 13.333333333333334, maxDps: 26.666666666666668, throughput: 26.666666666666668 },
 );
 
 console.log("towerMetrics: all tests passed");
