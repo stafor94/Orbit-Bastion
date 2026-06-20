@@ -45,6 +45,11 @@
       const liveThreat = liveThreatOverview();
       ui.difficulty.textContent = difficulty.label;
       ui.core.textContent = String(state.core);
+      if (ui.coreShield) {
+        const hasShield = state.coreShieldMax > 0;
+        ui.coreShield.textContent = hasShield ? `쉴드 ${state.coreShield}/${state.coreShieldMax}` : "쉴드 0/0";
+        ui.coreShield.classList.toggle("hidden", !hasShield);
+      }
       ui.alloy.textContent = String(Math.floor(state.alloy));
       ui.wave.textContent = `${Math.min(state.waveIndex + 1, state.waves.length)}/${state.waves.length || stage.waves}`;
       ui.stage.textContent = `${state.stageIndex + 1}. ${stage.name}`;
@@ -145,9 +150,7 @@
       const hits = laserFocusHits(tower.laserFocus, tower.branch);
       live.textContent = tower.laserTarget
         ? `집중 ${hits}/${laserMaxFocusHits(tower.branch)} / 피해 x${multiplier.toFixed(1)}`
-        : tower.laserRetargetTimer > 0
-          ? `재조준 ${tower.laserRetargetTimer.toFixed(1)}s`
-          : "표적 탐색";
+        : "표적 탐색";
     }
 
     function updateSoundButton() {

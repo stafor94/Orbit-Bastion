@@ -405,6 +405,7 @@
 
     function openResultScreen(victory, unlockedDifficultyId = null) {
       state.screen = "result";
+      playSound(victory ? "victory" : "defeat");
       ui.overlay.classList.add("active");
       ui.overlay.innerHTML = `
       <div class="screen-header">

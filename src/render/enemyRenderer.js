@@ -4,6 +4,7 @@
   function createEnemyRenderer(deps) {
     let { ctx } = deps;
     const { state, ENEMY_DEFS, enemyArmorValue } = deps;
+    const badgeWidthCache = new Map();
 
     function drawEnemies() {
       const ordered = state.enemyRenderOrder.length ? state.enemyRenderOrder : state.enemies;
@@ -20,50 +21,18 @@
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        if (enemy.type === "colossus") drawColossus(enemy, def, hpT);
-        else if (enemy.type === "broodcocoon") drawBroodCocoon(enemy, def, hpT);
-        else drawAlien(enemy, def, hpT);
+        drawSpeedAfterimage(enemy, def);
+        drawEnemyBody(enemy, def, hpT);
+        drawCriticalDamageCue(enemy, hpT);
+        drawStatusAuras(enemy, def);
+        drawArmorPlates(enemy, def);
 
-        if (enemy.slowTimer > 0) {
-          ctx.strokeStyle = "rgba(125,233,255,0.34)";
-          ctx.lineWidth = 1.2;
-          ctx.shadowColor = "#7de9ff";
-          ctx.shadowBlur = 2;
-          ctx.beginPath();
-          ctx.arc(0, 0, enemy.radius + 5, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.shadowBlur = 0;
+        if (def.boss || hpT < 0.98) {
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          ctx.fillRect(-enemy.radius, -enemy.radius - 11, enemy.radius * 2, 4);
+          ctx.fillStyle = hpT > 0.35 ? "#7dff8b" : "#ff5e6c";
+          ctx.fillRect(-enemy.radius, -enemy.radius - 11, enemy.radius * 2 * hpT, 4);
         }
-
-        if (enemy.markedTimer > 0) {
-          ctx.strokeStyle = "rgba(125,255,139,0.9)";
-          ctx.lineWidth = 1.8;
-          ctx.shadowColor = "#7dff8b";
-          ctx.shadowBlur = 12;
-          ctx.beginPath();
-          ctx.arc(0, 0, enemy.radius + 5, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(-enemy.radius - 2, 0);
-          ctx.lineTo(enemy.radius + 2, 0);
-          ctx.moveTo(0, -enemy.radius - 2);
-          ctx.lineTo(0, enemy.radius + 2);
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
-
-        const armor = enemyArmorValue(def);
-        if (armor > 0) {
-          ctx.fillStyle = "rgba(220, 235, 255, 0.76)";
-          for (let i = 0; i < Math.min(4, armor); i++) {
-            ctx.fillRect(-enemy.radius + 3 + i * 6, enemy.radius + 5, 4, 3);
-          }
-        }
-
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fillRect(-enemy.radius, -enemy.radius - 11, enemy.radius * 2, 4);
-        ctx.fillStyle = hpT > 0.35 ? "#7dff8b" : "#ff5e6c";
-        ctx.fillRect(-enemy.radius, -enemy.radius - 11, enemy.radius * 2 * hpT, 4);
         drawEnemyBadges(enemy, def);
         ctx.restore();
       }
@@ -101,16 +70,10 @@
       ctx.ellipse(0, enemy.radius * 0.7, enemy.radius * 1.15, enemy.radius * 0.45, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-      if (enemy.type === "colossus") drawColossus(enemy, def, 1);
-      else if (enemy.type === "broodcocoon") drawBroodCocoon(enemy, def, 1);
-      else drawAlien(enemy, def, 1);
-      const armor = enemyArmorValue(def);
-      if (armor > 0) {
-        ctx.fillStyle = "rgba(220, 235, 255, 0.76)";
-        for (let i = 0; i < Math.min(4, armor); i++) {
-          ctx.fillRect(-enemy.radius + 3 + i * 6, enemy.radius + 5, 4, 3);
-        }
-      }
+      drawThumbnailBackdrop(enemy, def);
+      drawEnemyBody(enemy, def, 1);
+      drawArmorPlates(enemy, def);
+      drawThumbnailTraitIcons(enemy, def);
       ctx.restore();
       ctx = previousCtx;
     }
@@ -118,20 +81,16 @@
     function drawEnemyBadges(enemy, def) {
       const badges = [];
       if (def.boss) badges.push({ text: "BOSS", fill: "rgba(255, 94, 108, 0.2)", stroke: "rgba(255, 94, 108, 0.55)", color: "#ffd0d4" });
-      if (enemyArmorValue(def) > 0) badges.push({ text: `장갑 ${enemyArmorValue(def)}`, fill: "rgba(214, 231, 255, 0.16)", stroke: "rgba(198, 221, 255, 0.45)", color: "#e6f0ff" });
-      if ((enemy.stunTimer || 0) > 0.01) badges.push({ text: "기절", fill: "rgba(255, 200, 90, 0.16)", stroke: "rgba(255, 200, 90, 0.48)", color: "#ffd27a" });
-      else if (enemy.slowTimer > 0) badges.push({ text: "감속", fill: "rgba(125, 233, 255, 0.16)", stroke: "rgba(125, 233, 255, 0.45)", color: "#baf4ff" });
-      if (enemy.markedTimer > 0) badges.push({ text: "표식", fill: "rgba(125, 255, 139, 0.16)", stroke: "rgba(125, 255, 139, 0.45)", color: "#c9ffd1" });
-      if (enemy.enraged) badges.push({ text: "광폭", fill: "rgba(223, 255, 98, 0.16)", stroke: "rgba(223, 255, 98, 0.45)", color: "#efffa6" });
-      if (enemy.guardedTimer > 0) badges.push({ text: `방호 +${enemy.guardArmor || 0}`, fill: "rgba(110, 200, 255, 0.16)", stroke: "rgba(110, 200, 255, 0.46)", color: "#d8f3ff" });
-      if (enemy.fracturedTimer > 0) badges.push({ text: "균열", fill: "rgba(255, 94, 108, 0.16)", stroke: "rgba(255, 94, 108, 0.36)", color: "#ffb5bd" });
+      if (enemyArmorValue(def) >= 10 || def.boss) badges.push({ text: `장갑 ${enemyArmorValue(def)}`, fill: "rgba(214, 231, 255, 0.16)", stroke: "rgba(198, 221, 255, 0.45)", color: "#e6f0ff" });
+      if (enemy.guardedTimer > 0 && (def.boss || enemy.radius >= 14)) badges.push({ text: `방호 +${enemy.guardArmor || 0}`, fill: "rgba(110, 200, 255, 0.16)", stroke: "rgba(110, 200, 255, 0.46)", color: "#d8f3ff" });
+      if (enemy.enraged && (def.boss || enemy.radius >= 10)) badges.push({ text: "광폭", fill: "rgba(223, 255, 98, 0.16)", stroke: "rgba(223, 255, 98, 0.45)", color: "#efffa6" });
       if (!badges.length) return;
       ctx.font = "900 9px 'Noto Sans KR', 'Malgun Gothic', sans-serif";
       ctx.textBaseline = "middle";
       let x = -enemy.radius;
       const y = -enemy.radius - 20;
-      for (const badge of badges.slice(0, 3)) {
-        const width = Math.ceil(ctx.measureText(badge.text).width) + 10;
+      for (const badge of badges.slice(0, 2)) {
+        const width = badgeWidth(badge.text);
         ctx.fillStyle = badge.fill;
         ctx.strokeStyle = badge.stroke;
         ctx.lineWidth = 1;
@@ -143,6 +102,186 @@
         ctx.fillText(badge.text, x + 5, y + 5.5);
         x += width + 4;
       }
+    }
+
+    function badgeWidth(text) {
+      if (!badgeWidthCache.has(text)) badgeWidthCache.set(text, Math.ceil(ctx.measureText(text).width) + 10);
+      return badgeWidthCache.get(text);
+    }
+
+    function drawEnemyBody(enemy, def, hpT) {
+      if (enemy.type === "colossus") drawColossus(enemy, def, hpT);
+      else if (enemy.type === "shieldmatron") drawShieldMatron(enemy, def, hpT);
+      else if (enemy.type === "riftbehemoth") drawRiftBehemoth(enemy, def, hpT);
+      else if (enemy.type === "broodcocoon") drawBroodCocoon(enemy, def, hpT);
+      else drawAlien(enemy, def, hpT);
+    }
+
+    function drawStatusAuras(enemy, def) {
+      const r = enemy.radius;
+      if (enemy.slowTimer > 0) {
+        drawStatusIcon(0, -r - 5, r * 0.2, "#7de9ff", "snow");
+        ctx.strokeStyle = "rgba(125,233,255,0.34)";
+        ctx.lineWidth = 1.2;
+        ctx.shadowColor = "#7de9ff";
+        ctx.shadowBlur = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      if ((enemy.stunTimer || 0) > 0.01) drawStatusIcon(r * 0.55, -r - 4, r * 0.2, "#ffc85a", "stun");
+      if (enemy.markedTimer > 0) {
+        drawStatusIcon(-r * 0.55, -r - 4, r * 0.2, "#7dff8b", "mark");
+        ctx.strokeStyle = "rgba(125,255,139,0.82)";
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = "#7dff8b";
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 5 + Math.sin(enemy.phase * 8) * 1.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r - 2, 0);
+        ctx.lineTo(r + 2, 0);
+        ctx.moveTo(0, -r - 2);
+        ctx.lineTo(0, r + 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      if (enemy.guardedTimer > 0) {
+        ctx.strokeStyle = "rgba(110, 200, 255, 0.34)";
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 7, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (enemy.fracturedTimer > 0) {
+        ctx.strokeStyle = "rgba(255, 94, 108, 0.58)";
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 3; i++) {
+          const a = enemy.phase * 0.9 + i * 2.1;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * r * 0.35, Math.sin(a) * r * 0.35);
+          ctx.lineTo(Math.cos(a + 0.5) * r * 1.15, Math.sin(a + 0.5) * r * 1.15);
+          ctx.stroke();
+        }
+      }
+      if (enemy.enraged) {
+        ctx.strokeStyle = "rgba(223, 255, 98, 0.55)";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 8 + Math.sin(enemy.phase * 12) * 2, -0.8, 0.8);
+        ctx.stroke();
+      }
+    }
+
+    function drawStatusIcon(x, y, r, color, kind) {
+      const size = Math.max(3, r);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.2;
+      if (kind === "snow") {
+        for (let i = 0; i < 3; i++) {
+          const a = (i / 3) * Math.PI;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * -size, Math.sin(a) * -size);
+          ctx.lineTo(Math.cos(a) * size, Math.sin(a) * size);
+          ctx.stroke();
+        }
+      } else if (kind === "stun") {
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.3, -size);
+        ctx.lineTo(size * 0.45, -size * 0.1);
+        ctx.lineTo(0, -size * 0.1);
+        ctx.lineTo(size * 0.25, size);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, size, 0, Math.PI * 2);
+        ctx.moveTo(-size * 1.4, 0);
+        ctx.lineTo(size * 1.4, 0);
+        ctx.moveTo(0, -size * 1.4);
+        ctx.lineTo(0, size * 1.4);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawArmorPlates(enemy, def) {
+      const armor = enemyArmorValue(def);
+      if (armor <= 0) return;
+      const r = enemy.radius;
+      const heavy = armor >= 10;
+      ctx.save();
+      ctx.fillStyle = heavy ? "rgba(214, 231, 255, 0.28)" : "rgba(220, 235, 255, 0.76)";
+      ctx.strokeStyle = heavy ? "rgba(238, 246, 255, 0.78)" : "rgba(238, 246, 255, 0.45)";
+      ctx.lineWidth = heavy ? 1.4 : 1;
+      if (heavy) {
+        for (const x of [-0.46, 0, 0.46]) {
+          ctx.beginPath();
+          ctx.roundRect(x * r - r * 0.16, -r * 0.62, r * 0.32, r * 0.38, 3);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 4, -0.2, Math.PI + 0.2);
+        ctx.stroke();
+      } else {
+        for (let i = 0; i < Math.min(4, armor); i++) ctx.fillRect(-r + 3 + i * 6, r + 5, 4, 3);
+      }
+      ctx.restore();
+    }
+
+    function drawCriticalDamageCue(enemy, hpT) {
+      if (hpT >= 0.35) return;
+      const r = enemy.radius;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 94, 108, ${0.28 + Math.sin(enemy.phase * 10) * 0.12})`;
+      ctx.shadowColor = "#ff5e6c";
+      ctx.shadowBlur = 8;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawSpeedAfterimage(enemy, def) {
+      if ((def.speed || 0) < 68 && !enemy.enraged) return;
+      const r = enemy.radius;
+      const color = enemy.enraged ? "223,255,98" : "125,255,139";
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 1; i <= 2; i++) {
+        ctx.globalAlpha = 0.12 / i;
+        ctx.fillStyle = `rgba(${color},0.45)`;
+        ctx.beginPath();
+        ctx.ellipse(-r * i * 0.42, Math.sin(enemy.phase * 8 + i) * r * 0.1, r * 0.85, r * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawThumbnailBackdrop(enemy, def) {
+      ctx.save();
+      const r = enemy.radius;
+      ctx.strokeStyle = def.boss ? "rgba(255, 94, 108, 0.6)" : enemyArmorValue(def) > 0 ? "rgba(214, 231, 255, 0.46)" : "rgba(125, 255, 139, 0.28)";
+      ctx.lineWidth = def.boss ? 2.2 : 1.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawThumbnailTraitIcons(enemy, def) {
+      const r = enemy.radius;
+      if (def.boss) drawStatusIcon(r * 0.92, -r * 0.84, r * 0.16, "#ff5e6c", "mark");
+      if (enemyArmorValue(def) > 0) drawStatusIcon(-r * 0.92, -r * 0.84, r * 0.16, "#d6e7ff", "stun");
+      if ((def.speed || 0) >= 70 || def.phaseSpeed) drawStatusIcon(r * 0.9, r * 0.86, r * 0.16, "#dfff62", "stun");
     }
 
     function drawAlien(enemy, def, hpT) {
@@ -167,6 +306,12 @@
           break;
         case "broodcarrier":
           drawBroodCarrier(enemy, def, hpT);
+          break;
+        case "shieldmatron":
+          drawShieldMatron(enemy, def, hpT);
+          break;
+        case "riftbehemoth":
+          drawRiftBehemoth(enemy, def, hpT);
           break;
         default:
           drawLurker(enemy, def, hpT);
@@ -261,6 +406,7 @@
 
     function drawBrute(enemy, def, hpT) {
       const r = enemy.radius;
+      const shoulderPulse = 1 + Math.sin(enemy.phase * 2.2) * 0.03;
       ctx.strokeStyle = "rgba(214,231,255,0.24)";
       ctx.lineWidth = 3;
       for (let side of [-1, 1]) {
@@ -276,12 +422,12 @@
       }
       ctx.fillStyle = alienGradient(def, r, 1.2);
       ctx.beginPath();
-      ctx.moveTo(-r * 1.04, -r * 0.06);
+      ctx.moveTo(-r * 1.14 * shoulderPulse, -r * 0.06);
       ctx.lineTo(-r * 0.76, -r * 0.7);
       ctx.lineTo(-r * 0.18, -r * 0.92);
       ctx.lineTo(r * 0.22, -r * 0.82);
       ctx.lineTo(r * 0.88, -r * 0.52);
-      ctx.lineTo(r * 1.02, 0);
+      ctx.lineTo(r * 1.12 * shoulderPulse, 0);
       ctx.lineTo(r * 0.74, r * 0.72);
       ctx.lineTo(r * 0.14, r * 0.94);
       ctx.lineTo(-r * 0.62, r * 0.84);
@@ -347,7 +493,7 @@
     function drawIronclad(enemy, def, hpT) {
       drawBrute(enemy, def, hpT);
       const r = enemy.radius;
-      ctx.fillStyle = "rgba(184, 199, 217, 0.26)";
+      ctx.fillStyle = "rgba(184, 199, 217, 0.34)";
       ctx.strokeStyle = "rgba(238, 246, 255, 0.78)";
       ctx.lineWidth = 2.4;
       for (const x of [-0.48, 0, 0.48]) {
@@ -399,6 +545,7 @@
 
     function drawBroodCarrier(enemy, def, hpT) {
       const r = enemy.radius;
+      const pulse = 1 + Math.sin(enemy.phase * 4.2) * 0.08;
       ctx.strokeStyle = "rgba(255, 214, 162, 0.24)";
       ctx.lineWidth = 2;
       for (let side of [-1, 1]) {
@@ -424,7 +571,7 @@
         const px = r * (0.18 + i * 0.22);
         const py = -r * (0.3 - i * 0.16);
         ctx.beginPath();
-        ctx.ellipse(px, py, r * (0.22 + i * 0.04), r * (0.3 + i * 0.02), 0.2, 0, Math.PI * 2);
+        ctx.ellipse(px, py, r * (0.22 + i * 0.04) * pulse, r * (0.3 + i * 0.02) * pulse, 0.2, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.strokeStyle = `rgba(255,255,255,${0.18 + (1 - hpT) * 0.22})`;
@@ -472,6 +619,91 @@
       ctx.arc(r * 0.24, -r * 0.1, r * 0.16, 0, Math.PI * 2);
       ctx.arc(-r * 0.32, -r * 0.08, r * 0.12, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    function drawShieldMatron(enemy, def, hpT) {
+      const r = enemy.radius;
+      const shieldPulse = 1 + Math.sin(enemy.phase * 3.2) * 0.04;
+      ctx.save();
+      ctx.strokeStyle = "rgba(114, 247, 255, 0.34)";
+      ctx.shadowColor = "#72f7ff";
+      ctx.shadowBlur = 16;
+      ctx.lineWidth = 2;
+      hexPath(0, 0, r * 1.28 * shieldPulse);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = alienGradient(def, r, 1.25);
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 1.12);
+      ctx.lineTo(r * 0.98, -r * 0.35);
+      ctx.lineTo(r * 0.78, r * 0.78);
+      ctx.lineTo(0, r * 1.04);
+      ctx.lineTo(-r * 0.78, r * 0.78);
+      ctx.lineTo(-r * 0.98, -r * 0.35);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(225, 252, 255, 0.7)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        const y = -r * 0.5 + i * r * 0.38;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.6, y);
+        ctx.lineTo(0, y + r * 0.16);
+        ctx.lineTo(r * 0.6, y);
+        ctx.stroke();
+      }
+      drawAlienEye(-r * 0.18, -r * 0.24, Math.max(3, r * 0.12), "#72f7ff");
+      drawAlienEye(r * 0.18, -r * 0.24, Math.max(3, r * 0.12), "#72f7ff");
+    }
+
+    function drawRiftBehemoth(enemy, def, hpT) {
+      const r = enemy.radius;
+      const phase = enemy.bossPhase || 0;
+      for (let i = 0; i < 5 + phase; i++) {
+        const a = enemy.phase * 0.75 + i * ((Math.PI * 2) / (5 + phase));
+        ctx.strokeStyle = i % 2 ? "rgba(255, 200, 90, 0.52)" : "rgba(255, 94, 108, 0.34)";
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.55);
+        ctx.lineTo(Math.cos(a) * r * (1.28 + phase * 0.08), Math.sin(a) * r * (1.04 + phase * 0.06));
+        ctx.stroke();
+      }
+      const g = ctx.createRadialGradient(-r * 0.25, -r * 0.35, 3, 0, 0, r * 1.35);
+      g.addColorStop(0, "#fff3c4");
+      g.addColorStop(0.24, def.color);
+      g.addColorStop(0.72, "#553414");
+      g.addColorStop(1, "#130b05");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-r * 1.18, -r * 0.18);
+      ctx.lineTo(-r * 0.35, -r * 1.0);
+      ctx.lineTo(r * 0.78, -r * 0.78);
+      ctx.lineTo(r * 1.24, 0);
+      ctx.lineTo(r * 0.58, r * 0.88);
+      ctx.lineTo(-r * 0.45, r * 0.82);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255, 240, 180, ${0.3 + phase * 0.12})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.72, -r * 0.2);
+      ctx.lineTo(-r * 0.12, r * 0.02);
+      ctx.lineTo(r * 0.35, -r * 0.38);
+      ctx.lineTo(r * 0.72, r * 0.15);
+      ctx.stroke();
+      drawAlienEye(r * 0.18, -r * 0.16, Math.max(3, r * 0.14), "#ffc85a");
+    }
+
+    function hexPath(x, y, r) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = -Math.PI / 2 + (Math.PI * 2 * i) / 6;
+        const px = x + Math.cos(a) * r;
+        const py = y + Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
     }
 
     function drawBroodCocoon(enemy, def, hpT) {
