@@ -814,6 +814,13 @@
     });
   }
 
+  function playSequence(audio, startTime, s) {
+    s.sequence.forEach((frequency, index) => {
+      const t = startTime + index * s.step;
+      playTone(audio, t, { ...s, f: frequency, to: frequency * 0.72 });
+    });
+  }
+
   function playTone(audio, t, s) {
     const osc = audio.createOscillator();
     const gain = audio.createGain();
