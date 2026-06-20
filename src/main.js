@@ -8,6 +8,7 @@
   const ctx = canvas.getContext("2d");
   const ui = {
     core: $("coreValue"),
+    coreShield: $("coreShieldValue"),
     difficulty: $("difficultyValue"),
     alloy: $("alloyValue"),
     wave: $("waveValue"),
@@ -549,7 +550,6 @@
   const SIMULATION_STEP = 1 / 120;
   const LASER_FOCUS_PER_HIT = 0.1;
   const LASER_BASE_MAX_DAMAGE_MULTIPLIER = 2;
-  const LASER_DAMAGE_INTERVAL = 0.25;
   const SAVE_BACKUP_VERSION = 1;
   let layoutResizeObserver = null;
 
@@ -747,6 +747,13 @@
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return null;
       state.audio = new AudioContext();
+      state.audioMaster = state.audio.createDynamicsCompressor();
+      state.audioMaster.threshold.setValueAtTime(-18, state.audio.currentTime);
+      state.audioMaster.knee.setValueAtTime(18, state.audio.currentTime);
+      state.audioMaster.ratio.setValueAtTime(8, state.audio.currentTime);
+      state.audioMaster.attack.setValueAtTime(0.004, state.audio.currentTime);
+      state.audioMaster.release.setValueAtTime(0.18, state.audio.currentTime);
+      state.audioMaster.connect(state.audio.destination);
     }
     if (state.audio.state === "suspended") state.audio.resume();
     return state.audio;
@@ -755,24 +762,177 @@
   function playSound(name) {
     if (state.muted) return;
     const now = performance.now();
-    const gate = { shoot: 55, hit: 90, click: 45, deploy: 90, boom: 150, boss: 900, upgrade: 140, error: 140 }[name] || 80;
+    const gate = {
+      pulse: 55,
+      laser: 80,
+      plasma: 180,
+      cryo: 520,
+      arc: 220,
+      rail: 520,
+      gravity: 620,
+      beacon: 620,
+      shoot: 55,
+      hit: 90,
+      click: 45,
+      deploy: 90,
+      boom: 150,
+      boss: 900,
+      bossIntro: 2600,
+      victory: 2600,
+      defeat: 2600,
+      upgrade: 140,
+      error: 140,
+    }[name] || 80;
     if ((state.soundCooldowns[name] || 0) > now) return;
     state.soundCooldowns[name] = now + gate;
     const audio = ensureAudio();
     if (!audio) return;
     const t = audio.currentTime;
     const presets = {
-      click: { f: 620, to: 420, d: 0.045, v: 0.018, type: "sine", filter: 2200 },
-      deploy: { f: 220, to: 360, d: 0.13, v: 0.045, type: "triangle", filter: 1800 },
-      shoot: { f: 760, to: 520, d: 0.055, v: 0.018, type: "triangle", filter: 2600 },
-      boom: { f: 120, to: 48, d: 0.26, v: 0.07, type: "sine", filter: 680, noise: 0.035 },
+      click: { layers: [{ f: 880, to: 520, d: 0.045, v: 0.014, type: "triangle", filter: 3200 }] },
+      deploy: {
+        layers: [
+          { f: 180, to: 280, d: 0.12, v: 0.03, type: "triangle", filter: 1600 },
+          { f: 720, to: 1120, d: 0.08, v: 0.012, type: "sine", filter: 4200, delay: 0.035 },
+        ],
+        noise: 0.012,
+      },
+      shoot: {
+        layers: [
+          { f: 980, to: 520, d: 0.055, v: 0.016, type: "triangle", filter: 3000 },
+          { f: 150, to: 90, d: 0.08, v: 0.012, type: "sine", filter: 900 },
+        ],
+      },
+      pulse: {
+        layers: [
+          { f: 880, to: 430, d: 0.075, v: 0.018, type: "triangle", filter: 2800 },
+          { f: 1320, to: 760, d: 0.045, v: 0.008, type: "sine", filter: 5200, delay: 0.018 },
+        ],
+      },
+      laser: {
+        layers: [
+          { f: 1800, to: 1180, d: 0.08, v: 0.013, type: "sawtooth", filter: 5200, q: 8 },
+          { f: 920, to: 860, d: 0.12, v: 0.008, type: "sine", filter: 3600, delay: 0.012 },
+        ],
+        noise: 0.006,
+        noiseFilterType: "bandpass",
+      },
+      plasma: {
+        layers: [
+          { f: 110, to: 54, d: 0.32, v: 0.04, type: "sine", filter: 620 },
+          { f: 260, to: 140, d: 0.22, v: 0.02, type: "sawtooth", filter: 920, delay: 0.025 },
+        ],
+        noise: 0.03,
+      },
+      cryo: {
+        layers: [
+          { f: 520, to: 860, d: 0.18, v: 0.016, type: "sine", filter: 3400 },
+          { f: 1760, to: 2400, d: 0.11, v: 0.006, type: "triangle", filter: 6200, delay: 0.04 },
+        ],
+        noise: 0.01,
+        noiseFilterType: "highpass",
+      },
+      arc: {
+        layers: [
+          { f: 1240, to: 280, d: 0.09, v: 0.018, type: "square", filter: 4600, q: 10 },
+          { f: 1840, to: 520, d: 0.055, v: 0.012, type: "sawtooth", filter: 7000, delay: 0.025 },
+        ],
+        noise: 0.02,
+        noiseFilterType: "bandpass",
+      },
+      rail: {
+        layers: [
+          { f: 90, to: 52, d: 0.18, v: 0.042, type: "sine", filter: 700 },
+          { f: 2200, to: 340, d: 0.12, v: 0.02, type: "triangle", filter: 3400, delay: 0.018 },
+        ],
+        noise: 0.035,
+      },
+      gravity: {
+        layers: [
+          { f: 72, to: 36, d: 0.5, v: 0.04, type: "sine", filter: 440 },
+          { f: 144, to: 72, d: 0.42, v: 0.018, type: "triangle", filter: 620, delay: 0.08 },
+        ],
+        noise: 0.012,
+      },
+      beacon: {
+        sequence: [430, 645, 860],
+        step: 0.07,
+        d: 0.15,
+        v: 0.018,
+        type: "triangle",
+        filter: 2600,
+        harmony: 1.5,
+      },
+      boom: {
+        layers: [
+          { f: 118, to: 42, d: 0.3, v: 0.06, type: "sine", filter: 620 },
+          { f: 64, to: 38, d: 0.44, v: 0.035, type: "triangle", filter: 360 },
+        ],
+        noise: 0.05,
+      },
       boss: { f: 82, to: 36, d: 0.55, v: 0.1, type: "sine", filter: 520, noise: 0.055 },
-      upgrade: { f: 360, to: 720, d: 0.22, v: 0.05, type: "triangle", filter: 2400 },
-      error: { f: 150, to: 95, d: 0.16, v: 0.035, type: "sine", filter: 900 },
+      bossIntro: {
+        sequence: [110, 82, 73, 55, 82, 55],
+        step: 0.2,
+        d: 0.28,
+        v: 0.044,
+        type: "sawtooth",
+        filter: 820,
+        harmony: 0.5,
+        noise: 0.032,
+      },
+      victory: {
+        sequence: [392, 523, 659, 784, 1047],
+        step: 0.12,
+        d: 0.28,
+        v: 0.032,
+        type: "triangle",
+        filter: 3200,
+        harmony: 1.25,
+      },
+      defeat: {
+        sequence: [220, 185, 147, 110, 82],
+        step: 0.18,
+        d: 0.36,
+        v: 0.044,
+        type: "sine",
+        filter: 900,
+        harmony: 0.5,
+        noise: 0.026,
+      },
+      upgrade: {
+        sequence: [360, 540, 720],
+        step: 0.075,
+        d: 0.16,
+        v: 0.027,
+        type: "triangle",
+        filter: 2800,
+        harmony: 1.5,
+      },
+      error: {
+        layers: [
+          { f: 150, to: 95, d: 0.16, v: 0.028, type: "sawtooth", filter: 900 },
+          { f: 75, to: 55, d: 0.18, v: 0.018, type: "sine", filter: 420, delay: 0.04 },
+        ],
+      },
     };
     const s = presets[name] || presets.click;
-    playTone(audio, t, s);
-    if (s.noise) playNoise(audio, t, s.d * 0.8, s.noise, s.filter);
+    if (s.sequence) playSequence(audio, t, s);
+    else if (s.layers) playLayers(audio, t, s.layers);
+    else playTone(audio, t, s);
+    if (s.noise) playNoise(audio, t, (s.d || 0.18) * 0.8, s.noise, s.filter || 1800, s.noiseFilterType);
+  }
+
+  function playSequence(audio, startTime, s) {
+    s.sequence.forEach((frequency, index) => {
+      const t = startTime + index * s.step;
+      playTone(audio, t, { ...s, f: frequency, to: frequency * 0.72 });
+      if (s.harmony) playTone(audio, t + 0.012, { ...s, f: frequency * s.harmony, to: frequency * s.harmony * 0.72, v: s.v * 0.45 });
+    });
+  }
+
+  function playLayers(audio, startTime, layers) {
+    layers.forEach((layer) => playTone(audio, startTime + (layer.delay || 0), layer));
   }
 
   function playTone(audio, t, s) {
@@ -782,19 +942,20 @@
     osc.type = s.type;
     osc.frequency.setValueAtTime(s.f, t);
     osc.frequency.exponentialRampToValueAtTime(Math.max(30, s.to), t + s.d);
-    filter.type = "lowpass";
+    filter.type = s.filterType || "lowpass";
     filter.frequency.setValueAtTime(s.filter, t);
+    filter.Q.setValueAtTime(s.q || 1, t);
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(s.v, t + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + s.d);
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(audio.destination);
+    gain.connect(state.audioMaster || audio.destination);
     osc.start(t);
     osc.stop(t + s.d + 0.03);
   }
 
-  function playNoise(audio, t, duration, volume, filterFreq) {
+  function playNoise(audio, t, duration, volume, filterFreq, filterType = "lowpass") {
     const length = Math.max(1, Math.floor(audio.sampleRate * duration));
     const buffer = audio.createBuffer(1, length, audio.sampleRate);
     const data = buffer.getChannelData(0);
@@ -803,13 +964,13 @@
     const gain = audio.createGain();
     const filter = audio.createBiquadFilter();
     source.buffer = buffer;
-    filter.type = "lowpass";
+    filter.type = filterType;
     filter.frequency.setValueAtTime(filterFreq, t);
     gain.gain.setValueAtTime(volume, t);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
     source.connect(filter);
     filter.connect(gain);
-    gain.connect(audio.destination);
+    gain.connect(state.audioMaster || audio.destination);
     source.start(t);
     source.stop(t + duration);
   }
@@ -876,10 +1037,6 @@
       branch: null,
       laserTarget: null,
       laserFocus: 0,
-      laserDamageBuffer: 0,
-      laserDamageTimer: 0,
-      laserPendingTarget: null,
-      laserRetargetTimer: 0,
     };
   }
 
@@ -955,6 +1112,7 @@
     if (def.boss) {
       enemy.bossAnnounced = true;
       state.shock = Math.max(state.shock, 0.7);
+      playSound("bossIntro");
       showBossWarning("거대 개체 감지", "보스 웨이브입니다. 장갑 대응과 순간 화력을 준비하세요.");
       floatingText(enemy.x, enemy.y - 54, `${def.name} 출현`, "#ffb3ba");
     }
@@ -1114,7 +1272,10 @@
     const range = Math.round(towerBaseRange(type, def, level, branch) * bonuses.range * rangeScale);
     const baseDamage = def.damage * levelScale;
     const damage = Math.floor(baseDamage * damageScale * bonuses.damage);
-    const cooldown = def.cooldown ? Math.round(def.cooldown * (1 - (level - 1) * 0.08) * bonuses.cooldown * cooldownScale * 100) / 100 : 0;
+    const cooldownBase = type === "laser"
+      ? def.cooldown
+      : def.cooldown * (1 - (level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
+    const cooldown = def.cooldown ? Math.round(cooldownBase * 100) / 100 : 0;
     const splash = def.splash
       ? Math.round(def.splash * (1 + (level - 1) * 0.16 + research.plasma * 0.06 + (type === "plasma" && branch === "wide" ? 0.5 : 0)))
       : 0;
@@ -1138,7 +1299,7 @@
     const parts = [];
     if (stats.damage > 0) parts.push(`피해 ${stats.damage}`);
     parts.push(`사거리 ${stats.range}`);
-    if (stats.cooldown) parts.push(type === "laser" ? `재조준 ${stats.cooldown}s` : `주기 ${stats.cooldown}s`);
+    if (stats.cooldown) parts.push(`주기 ${stats.cooldown}s`);
     if (stats.splash) parts.push(`폭발 ${stats.splash}`);
     if (stats.slow) parts.push(`감속 ${stats.slow}%`);
     if (stats.stun) parts.push(`기절 ${stats.stun}s`);
@@ -1478,7 +1639,8 @@
           state.coreShield -= 1;
           state.coreShieldTimer = 0;
           state.shock = 0.45;
-          floatingText(state.width - 28, state.height - 32, "쉴드 방어", "#72f7ff");
+          const corePoint = state.path[state.path.length - 1];
+          floatingText(corePoint.x, corePoint.y - 36, "Block!", "#72f7ff");
         } else {
           state.core -= leakDamage;
           state.shock = 1;
@@ -1599,45 +1761,25 @@
 
       if (tower.type === "laser") {
         if (!target) {
+          tower.laserTarget = null;
           tower.laserFocus = 0;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
-          tower.laserPendingTarget = null;
-          tower.laserRetargetTimer = 0;
           continue;
         }
-        if (!tower.laserTarget) {
+        if (tower.laserTarget !== target) {
           tower.laserTarget = target;
           tower.laserFocus = 0;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
-        } else if (tower.laserTarget !== target) {
-          tower.laserPendingTarget = target;
-          if (tower.laserRetargetTimer <= 0) {
-            tower.laserRetargetTimer = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
-          }
-          tower.laserRetargetTimer -= dt;
-          tower.laserFocus = 0;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
-          if (tower.laserRetargetTimer > 0) continue;
-          tower.laserTarget = tower.laserPendingTarget;
-          tower.laserPendingTarget = null;
-          tower.laserRetargetTimer = 0;
         }
         const laserTarget = tower.laserTarget;
         if (!laserTarget || laserTarget.dead || dist(slot, laserTarget) > range) continue;
         tower.angle = Math.atan2(laserTarget.y - slot.y, laserTarget.x - slot.x);
         const focusRatio = laserFocusRatio(tower.laserFocus, tower.branch);
         const focusMultiplier = laserFocusMultiplier(tower.laserFocus, tower.branch);
-        const damagePerSecond = def.damage * levelScale * damageResearch * focusMultiplier;
-        tower.laserDamageBuffer += damagePerSecond * dt;
-        tower.laserDamageTimer += dt;
-        if (tower.laserDamageTimer >= LASER_DAMAGE_INTERVAL) {
-          const damage = tower.laserDamageBuffer;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
+        const laserCooldown = def.cooldown;
+        if (tower.cooldown <= 0) {
+          tower.cooldown = laserCooldown;
+          const damage = def.damage * levelScale * damageResearch * focusMultiplier;
           dealDamage(laserTarget, damage, tower);
+          playSound("laser");
           tower.laserFocus = Math.min(laserMaxFocusBonus(tower.branch), tower.laserFocus + LASER_FOCUS_PER_HIT);
           if (tower.branch === "prism") {
             for (const enemy of nearbyEnemies(laserTarget, 82, 3)) {
@@ -1658,18 +1800,22 @@
         });
         tower.recoil = 0.25;
       } else if (tower.type === "cryo") {
+        let chilled = false;
         for (const enemy of state.enemies) {
           if (dist(slot, enemy) <= range) {
             const branchBonus = tower.branch === "freeze" ? 0.1 : 0;
             enemy.slowFactor = Math.max(0.05, def.slow - (tower.level - 1) * 0.07 - research.cryo * 0.03 - branchBonus);
             enemy.slowTimer = 0.5;
+            chilled = true;
           }
         }
+        if (chilled) playSound("cryo");
         tower.recoil = 0.2;
       } else if (tower.type === "beacon") {
         if (tower.cooldown <= 0) {
           tower.cooldown = def.cooldown * bonuses.cooldown * Math.max(0.78, 1 - (tower.level - 1) * 0.05);
           tower.recoil = 0.55;
+          playSound("beacon");
           for (const ally of state.towers) {
             if (ally === tower || ally.type === "beacon") continue;
             const allySlot = state.slots[ally.slotIndex];
@@ -1698,7 +1844,7 @@
           source = enemy;
         }
         burst(slot.x, slot.y, def.color, 7, 90);
-        playSound("shoot");
+        playSound("arc");
       } else if (tower.type === "rail" && target && tower.cooldown <= 0) {
         tower.cooldown = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
         tower.recoil = 1.25;
@@ -1727,7 +1873,7 @@
           maxLife: 1,
         });
         burst(slot.x, slot.y, def.color, 6, 110);
-        playSound("shoot");
+        playSound("rail");
       } else if (target && tower.cooldown <= 0) {
         tower.cooldown = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
         tower.recoil = 1;
@@ -1751,7 +1897,7 @@
             trail: [],
           });
         }
-        playSound(tower.type === "plasma" ? "boom" : "shoot");
+        playSound(tower.type === "plasma" ? "plasma" : tower.type === "gravity" ? "gravity" : "pulse");
         burst(slot.x, slot.y, def.color, tower.type === "plasma" ? 8 : 5, 80);
       }
     }

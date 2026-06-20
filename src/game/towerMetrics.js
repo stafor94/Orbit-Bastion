@@ -37,14 +37,14 @@
     const damage = Number(stats.damage) || 0;
     const cooldown = Number(stats.cooldown) || 0;
     if (!damage) return { dps: 0, maxDps: 0, throughput: 0 };
+    const dps = cooldown > 0 ? damage / cooldown : damage;
     if (type === "laser") {
       return {
-        dps: damage,
-        maxDps: damage * laserMaxMultiplier,
-        throughput: damage * laserMaxMultiplier,
+        dps,
+        maxDps: dps * laserMaxMultiplier,
+        throughput: dps * laserMaxMultiplier,
       };
     }
-    const dps = cooldown > 0 ? damage / cooldown : damage;
     const targets = Math.max(1, Number(stats.pierce) || Number(stats.chain) || 1);
     return { dps, maxDps: dps, throughput: dps * targets };
   }
