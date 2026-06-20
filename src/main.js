@@ -550,7 +550,6 @@
   const SIMULATION_STEP = 1 / 120;
   const LASER_FOCUS_PER_HIT = 0.1;
   const LASER_BASE_MAX_DAMAGE_MULTIPLIER = 2;
-  const LASER_DAMAGE_INTERVAL = 0.25;
   const SAVE_BACKUP_VERSION = 1;
   let layoutResizeObserver = null;
 
@@ -877,10 +876,6 @@
       branch: null,
       laserTarget: null,
       laserFocus: 0,
-      laserDamageBuffer: 0,
-      laserDamageTimer: 0,
-      laserPendingTarget: null,
-      laserRetargetTimer: 0,
     };
   }
 
@@ -1139,7 +1134,7 @@
     const parts = [];
     if (stats.damage > 0) parts.push(`피해 ${stats.damage}`);
     parts.push(`사거리 ${stats.range}`);
-    if (stats.cooldown) parts.push(type === "laser" ? `재조준 ${stats.cooldown}s` : `주기 ${stats.cooldown}s`);
+    if (stats.cooldown) parts.push(`주기 ${stats.cooldown}s`);
     if (stats.splash) parts.push(`폭발 ${stats.splash}`);
     if (stats.slow) parts.push(`감속 ${stats.slow}%`);
     if (stats.stun) parts.push(`기절 ${stats.stun}s`);
@@ -1600,44 +1595,23 @@
 
       if (tower.type === "laser") {
         if (!target) {
+          tower.laserTarget = null;
           tower.laserFocus = 0;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
-          tower.laserPendingTarget = null;
-          tower.laserRetargetTimer = 0;
           continue;
         }
-        if (!tower.laserTarget) {
+        if (tower.laserTarget !== target) {
           tower.laserTarget = target;
           tower.laserFocus = 0;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
-        } else if (tower.laserTarget !== target) {
-          tower.laserPendingTarget = target;
-          if (tower.laserRetargetTimer <= 0) {
-            tower.laserRetargetTimer = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
-          }
-          tower.laserRetargetTimer -= dt;
-          tower.laserFocus = 0;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
-          if (tower.laserRetargetTimer > 0) continue;
-          tower.laserTarget = tower.laserPendingTarget;
-          tower.laserPendingTarget = null;
-          tower.laserRetargetTimer = 0;
         }
         const laserTarget = tower.laserTarget;
         if (!laserTarget || laserTarget.dead || dist(slot, laserTarget) > range) continue;
         tower.angle = Math.atan2(laserTarget.y - slot.y, laserTarget.x - slot.x);
         const focusRatio = laserFocusRatio(tower.laserFocus, tower.branch);
         const focusMultiplier = laserFocusMultiplier(tower.laserFocus, tower.branch);
-        const damagePerSecond = def.damage * levelScale * damageResearch * focusMultiplier;
-        tower.laserDamageBuffer += damagePerSecond * dt;
-        tower.laserDamageTimer += dt;
-        if (tower.laserDamageTimer >= LASER_DAMAGE_INTERVAL) {
-          const damage = tower.laserDamageBuffer;
-          tower.laserDamageBuffer = 0;
-          tower.laserDamageTimer = 0;
+        const laserCooldown = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
+        if (tower.cooldown <= 0) {
+          tower.cooldown = laserCooldown;
+          const damage = def.damage * levelScale * damageResearch * focusMultiplier;
           dealDamage(laserTarget, damage, tower);
           tower.laserFocus = Math.min(laserMaxFocusBonus(tower.branch), tower.laserFocus + LASER_FOCUS_PER_HIT);
           if (tower.branch === "prism") {

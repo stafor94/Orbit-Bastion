@@ -150,9 +150,7 @@
       const hits = laserFocusHits(tower.laserFocus, tower.branch);
       live.textContent = tower.laserTarget
         ? `집중 ${hits}/${laserMaxFocusHits(tower.branch)} / 피해 x${multiplier.toFixed(1)}`
-        : tower.laserRetargetTimer > 0
-          ? `재조준 ${tower.laserRetargetTimer.toFixed(1)}s`
-          : "표적 탐색";
+        : "표적 탐색";
     }
 
     function updateSoundButton() {
