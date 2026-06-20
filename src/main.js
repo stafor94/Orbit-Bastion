@@ -755,7 +755,27 @@
   function playSound(name) {
     if (state.muted) return;
     const now = performance.now();
-    const gate = { shoot: 55, hit: 90, click: 45, deploy: 90, boom: 150, boss: 900, upgrade: 140, error: 140 }[name] || 80;
+    const gate = {
+      pulse: 55,
+      laser: 80,
+      plasma: 180,
+      cryo: 520,
+      arc: 220,
+      rail: 520,
+      gravity: 620,
+      beacon: 620,
+      shoot: 55,
+      hit: 90,
+      click: 45,
+      deploy: 90,
+      boom: 150,
+      boss: 900,
+      bossIntro: 2600,
+      victory: 2600,
+      defeat: 2600,
+      upgrade: 140,
+      error: 140,
+    }[name] || 80;
     if ((state.soundCooldowns[name] || 0) > now) return;
     state.soundCooldowns[name] = now + gate;
     const audio = ensureAudio();
@@ -765,14 +785,33 @@
       click: { f: 620, to: 420, d: 0.045, v: 0.018, type: "sine", filter: 2200 },
       deploy: { f: 220, to: 360, d: 0.13, v: 0.045, type: "triangle", filter: 1800 },
       shoot: { f: 760, to: 520, d: 0.055, v: 0.018, type: "triangle", filter: 2600 },
+      pulse: { f: 880, to: 540, d: 0.07, v: 0.022, type: "triangle", filter: 2800 },
+      laser: { f: 1240, to: 920, d: 0.09, v: 0.018, type: "sawtooth", filter: 3600 },
+      plasma: { f: 180, to: 92, d: 0.24, v: 0.052, type: "sine", filter: 760, noise: 0.022 },
+      cryo: { f: 520, to: 760, d: 0.18, v: 0.024, type: "sine", filter: 3200 },
+      arc: { f: 1180, to: 360, d: 0.12, v: 0.028, type: "square", filter: 4200, noise: 0.012 },
+      rail: { f: 1320, to: 160, d: 0.2, v: 0.046, type: "triangle", filter: 3000, noise: 0.018 },
+      gravity: { f: 96, to: 48, d: 0.42, v: 0.04, type: "sine", filter: 520, noise: 0.014 },
+      beacon: { f: 430, to: 760, d: 0.2, v: 0.032, type: "triangle", filter: 2400 },
       boom: { f: 120, to: 48, d: 0.26, v: 0.07, type: "sine", filter: 680, noise: 0.035 },
       boss: { f: 82, to: 36, d: 0.55, v: 0.1, type: "sine", filter: 520, noise: 0.055 },
+      bossIntro: { sequence: [110, 82, 73, 55, 82], step: 0.18, d: 0.22, v: 0.062, type: "sawtooth", filter: 780, noise: 0.035 },
+      victory: { sequence: [392, 523, 659, 784], step: 0.13, d: 0.24, v: 0.045, type: "triangle", filter: 2600 },
+      defeat: { sequence: [220, 185, 147, 110], step: 0.18, d: 0.32, v: 0.052, type: "sine", filter: 900, noise: 0.024 },
       upgrade: { f: 360, to: 720, d: 0.22, v: 0.05, type: "triangle", filter: 2400 },
       error: { f: 150, to: 95, d: 0.16, v: 0.035, type: "sine", filter: 900 },
     };
     const s = presets[name] || presets.click;
-    playTone(audio, t, s);
+    if (s.sequence) playSequence(audio, t, s);
+    else playTone(audio, t, s);
     if (s.noise) playNoise(audio, t, s.d * 0.8, s.noise, s.filter);
+  }
+
+  function playSequence(audio, startTime, s) {
+    s.sequence.forEach((frequency, index) => {
+      const t = startTime + index * s.step;
+      playTone(audio, t, { ...s, f: frequency, to: frequency * 0.72 });
+    });
   }
 
   function playTone(audio, t, s) {
@@ -951,6 +990,7 @@
     if (def.boss) {
       enemy.bossAnnounced = true;
       state.shock = Math.max(state.shock, 0.7);
+      playSound("bossIntro");
       showBossWarning("거대 개체 감지", "보스 웨이브입니다. 장갑 대응과 순간 화력을 준비하세요.");
       floatingText(enemy.x, enemy.y - 54, `${def.name} 출현`, "#ffb3ba");
     }
@@ -1110,7 +1150,10 @@
     const range = Math.round(towerBaseRange(type, def, level, branch) * bonuses.range * rangeScale);
     const baseDamage = def.damage * levelScale;
     const damage = Math.floor(baseDamage * damageScale * bonuses.damage);
-    const cooldown = def.cooldown ? Math.round(def.cooldown * (1 - (level - 1) * 0.08) * bonuses.cooldown * cooldownScale * 100) / 100 : 0;
+    const cooldownBase = type === "laser"
+      ? def.cooldown
+      : def.cooldown * (1 - (level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
+    const cooldown = def.cooldown ? Math.round(cooldownBase * 100) / 100 : 0;
     const splash = def.splash
       ? Math.round(def.splash * (1 + (level - 1) * 0.16 + research.plasma * 0.06 + (type === "plasma" && branch === "wide" ? 0.5 : 0)))
       : 0;
@@ -1474,7 +1517,8 @@
           state.coreShield -= 1;
           state.coreShieldTimer = 0;
           state.shock = 0.45;
-          floatingText(state.width - 28, state.height - 32, "쉴드 방어", "#72f7ff");
+          const corePoint = state.path[state.path.length - 1];
+          floatingText(corePoint.x, corePoint.y - 36, "Block!", "#72f7ff");
         } else {
           state.core -= leakDamage;
           state.shock = 1;
@@ -1608,11 +1652,12 @@
         tower.angle = Math.atan2(laserTarget.y - slot.y, laserTarget.x - slot.x);
         const focusRatio = laserFocusRatio(tower.laserFocus, tower.branch);
         const focusMultiplier = laserFocusMultiplier(tower.laserFocus, tower.branch);
-        const laserCooldown = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
+        const laserCooldown = def.cooldown;
         if (tower.cooldown <= 0) {
           tower.cooldown = laserCooldown;
           const damage = def.damage * levelScale * damageResearch * focusMultiplier;
           dealDamage(laserTarget, damage, tower);
+          playSound("laser");
           tower.laserFocus = Math.min(laserMaxFocusBonus(tower.branch), tower.laserFocus + LASER_FOCUS_PER_HIT);
           if (tower.branch === "prism") {
             for (const enemy of nearbyEnemies(laserTarget, 82, 3)) {
@@ -1633,18 +1678,22 @@
         });
         tower.recoil = 0.25;
       } else if (tower.type === "cryo") {
+        let chilled = false;
         for (const enemy of state.enemies) {
           if (dist(slot, enemy) <= range) {
             const branchBonus = tower.branch === "freeze" ? 0.1 : 0;
             enemy.slowFactor = Math.max(0.05, def.slow - (tower.level - 1) * 0.07 - research.cryo * 0.03 - branchBonus);
             enemy.slowTimer = 0.5;
+            chilled = true;
           }
         }
+        if (chilled) playSound("cryo");
         tower.recoil = 0.2;
       } else if (tower.type === "beacon") {
         if (tower.cooldown <= 0) {
           tower.cooldown = def.cooldown * bonuses.cooldown * Math.max(0.78, 1 - (tower.level - 1) * 0.05);
           tower.recoil = 0.55;
+          playSound("beacon");
           for (const ally of state.towers) {
             if (ally === tower || ally.type === "beacon") continue;
             const allySlot = state.slots[ally.slotIndex];
@@ -1673,7 +1722,7 @@
           source = enemy;
         }
         burst(slot.x, slot.y, def.color, 7, 90);
-        playSound("shoot");
+        playSound("arc");
       } else if (tower.type === "rail" && target && tower.cooldown <= 0) {
         tower.cooldown = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
         tower.recoil = 1.25;
@@ -1702,7 +1751,7 @@
           maxLife: 1,
         });
         burst(slot.x, slot.y, def.color, 6, 110);
-        playSound("shoot");
+        playSound("rail");
       } else if (target && tower.cooldown <= 0) {
         tower.cooldown = def.cooldown * (1 - (tower.level - 1) * 0.08) * bonuses.cooldown * cooldownScale;
         tower.recoil = 1;
@@ -1726,7 +1775,7 @@
             trail: [],
           });
         }
-        playSound(tower.type === "plasma" ? "boom" : "shoot");
+        playSound(tower.type === "plasma" ? "plasma" : tower.type === "gravity" ? "gravity" : "pulse");
         burst(slot.x, slot.y, def.color, tower.type === "plasma" ? 8 : 5, 80);
       }
     }
