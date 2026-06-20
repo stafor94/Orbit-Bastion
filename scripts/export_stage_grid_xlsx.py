@@ -24,7 +24,7 @@ def parse_stage_layouts() -> list[dict[str, list[list[int]]]]:
     object_blocks = re.findall(r"\{\s*path:\s*\[(.*?)\],\s*slots:\s*\[(.*?)\],\s*\}", block, re.S)
     stages = []
     for path_block, slot_block in object_blocks:
-      path = [[int(x), int(y)] for x, y in re.findall(r"\[(\d+),\s*(\d+)\]", path_block)]
+      path = [[int(x), int(y)] for x, y in re.findall(r"\[(-?\d+),\s*(-?\d+)\]", path_block)]
       slots = [[int(x), int(y)] for x, y in re.findall(r"\[(\d+),\s*(\d+)\]", slot_block)]
       stages.append({"path": path, "slots": slots})
     return stages
