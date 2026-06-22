@@ -26,6 +26,10 @@
     start: $("startWaveButton"),
     speed: $("speedButton"),
     autoWave: $("autoWaveButton"),
+    stasisSkill: $("stasisSkillButton"),
+    overchargeSkill: $("overchargeSkillButton"),
+    empSkill: $("empSkillButton"),
+    tacticalUses: $("tacticalUsesValue"),
     waveSummary: $("waveSummary"),
     waveGroups: $("waveGroups"),
     threatSummary: $("threatSummary"),
@@ -98,6 +102,15 @@
     projectiles: [],
     particles: [],
     acidPools: [],
+    tacticalFields: [],
+    selectedTacticalSkill: null,
+    tacticalUses: 2,
+    tacticalMaxUses: 2,
+    tacticalCooldowns: { stasis: 0, overcharge: 0, emp: 0 },
+    tacticalUiRefreshTimer: 0,
+    overchargeTimer: 0,
+    bonusSpawnTimer: 0,
+    bonusSpawnPending: false,
     beams: [],
     railAfterimages: [],
     shock: 0,
@@ -211,6 +224,11 @@
   const difficultyOrder = window.OrbitDifficulties?.order || Object.keys(DIFFICULTY_DEFS);
   const DEFAULT_UNLOCKED_DIFFICULTY_INDEX = Math.min(difficultyOrder.length - 1, 2);
   const BOSS_MINION_BASE_COOLDOWN = 15;
+  const TACTICAL_SKILLS = {
+    stasis: { name: "정지장 투하", radius: 100, duration: 10, cooldown: 30 },
+    overcharge: { name: "합금 과충전", duration: 8, cooldown: 35 },
+    emp: { name: "EMP 펄스", stun: 2.4, fracture: 6, damage: 70, cooldown: 40 },
+  };
   const DIFFICULTY_RESEARCH_REWARD = {
     easy: 1,
     normal: 2,
@@ -1018,6 +1036,14 @@
     state.projectiles = [];
     state.particles = [];
     state.acidPools = [];
+    state.tacticalFields = [];
+    state.selectedTacticalSkill = null;
+    state.tacticalUses = state.tacticalMaxUses;
+    state.tacticalCooldowns = { stasis: 0, overcharge: 0, emp: 0 };
+    state.tacticalUiRefreshTimer = 0;
+    state.overchargeTimer = 0;
+    state.bonusSpawnTimer = 0;
+    state.bonusSpawnPending = false;
     state.beams = [];
     state.railAfterimages = [];
     state.gameOver = false;
@@ -1185,6 +1211,8 @@
     state.waveQueue = wave.groups.map((g) => ({ ...g, remaining: g.count }));
     state.currentGroup = null;
     state.spawnTimer = 0.25;
+    state.bonusSpawnPending = Math.random() < 0.1;
+    state.bonusSpawnTimer = state.bonusSpawnPending ? 3 + Math.random() * 14 : 0;
     state.waveActive = true;
     hideBanner();
     updateUI();
@@ -1505,13 +1533,14 @@
     updateTowers(dt);
     updateProjectiles(dt);
     updateAcidPools(dt);
+    updateTacticalEffects(dt);
     for (const afterimage of state.railAfterimages) afterimage.life -= dt;
     state.railAfterimages = state.railAfterimages.filter((afterimage) => afterimage.life > 0);
     pruneDeadEnemies();
     updateParticles(dt);
     for (const slot of state.slots) slot.pulse = Math.max(0, slot.pulse - dt * 2.4);
 
-    if (state.waveActive && state.waveQueue.length === 0 && !state.currentGroup && state.enemies.length === 0) {
+    if (state.waveActive && state.waveQueue.length === 0 && !state.currentGroup && !state.bonusSpawnPending && state.enemies.length === 0) {
       completeWave();
     }
     if (
@@ -1535,6 +1564,17 @@
 
   function spawnTick(dt) {
     if (!state.waveActive) return;
+    if (state.bonusSpawnPending) {
+      state.bonusSpawnTimer -= dt;
+      if (state.bonusSpawnTimer <= 0) {
+        const bonus = spawnEnemy("bonuscarrier", { progress: -18 });
+        bonus.phase = Math.random() * 10;
+        state.bonusSpawnPending = false;
+        state.bonusSpawnTimer = 0;
+        showBanner("보너스 유닛 출현", "합금 운반자를 처치하면 합금 100을 획득합니다.", 1600);
+        floatingText(bonus.x, bonus.y - 26, "합금 +100 운반", "#ffc85a");
+      }
+    }
     state.spawnTimer -= dt;
     if (state.spawnTimer > 0) return;
     if (!state.currentGroup) {
@@ -1586,6 +1626,7 @@
       }
       const enrageSpeed = enrageActive ? def.enrage.speed : 1;
       const bossPhaseSpeed = def.phaseSpeed?.[enemy.bossPhase || 0] || 1;
+      applyTacticalFieldToEnemy(enemy);
       const motionFactor = enemy.stunTimer > 0 ? 0 : enemy.slowFactor * enrageSpeed * bossPhaseSpeed;
       if (def.cocoonBody) {
         enemy.hatchTimer = Math.max(0, (enemy.hatchTimer || 0) - dt);
@@ -1991,6 +2032,147 @@
     state.acidPools = state.acidPools.filter((pool) => pool.life > 0);
   }
 
+  function updateTacticalEffects(dt) {
+    const hadOvercharge = state.overchargeTimer > 0;
+    state.overchargeTimer = Math.max(0, state.overchargeTimer - dt);
+    let cooldownActive = false;
+    for (const skill of Object.keys(TACTICAL_SKILLS)) {
+      state.tacticalCooldowns[skill] = Math.max(0, (state.tacticalCooldowns[skill] || 0) - dt);
+      cooldownActive ||= state.tacticalCooldowns[skill] > 0;
+    }
+    for (const field of state.tacticalFields) field.life -= dt;
+    state.tacticalFields = state.tacticalFields.filter((field) => field.life > 0);
+    state.tacticalUiRefreshTimer = Math.max(0, state.tacticalUiRefreshTimer - dt);
+    if ((hadOvercharge || cooldownActive) && state.tacticalUiRefreshTimer <= 0) {
+      state.tacticalUiRefreshTimer = 0.25;
+      updateUI();
+    }
+  }
+
+  function applyTacticalFieldToEnemy(enemy) {
+    for (const field of state.tacticalFields) {
+      if (field.type !== "stasis" || dist(field, enemy) > field.radius) continue;
+      enemy.slowFactor = Math.min(enemy.slowFactor, 0.08);
+      enemy.slowTimer = Math.max(enemy.slowTimer, 0.18);
+      enemy.stunTimer = Math.max(enemy.stunTimer || 0, 0.08);
+    }
+  }
+
+  function canUseTacticalSkill() {
+    return state.screen === "battle" && !state.gameOver && !state.victory && state.tacticalUses > 0;
+  }
+
+  function skillCooldownRemaining(skill) {
+    return Math.ceil(state.tacticalCooldowns[skill] || 0);
+  }
+
+  function spendTacticalUse(skill) {
+    state.tacticalUses = Math.max(0, state.tacticalUses - 1);
+    state.tacticalCooldowns[skill] = TACTICAL_SKILLS[skill]?.cooldown || 30;
+    state.tacticalUiRefreshTimer = 0;
+    state.selectedTacticalSkill = null;
+    updateUI();
+  }
+
+  function selectTacticalSkill(skill, point = null) {
+    if (!canUseTacticalSkill()) {
+      playSound("error");
+      return;
+    }
+    if (skill !== "stasis") return;
+    if (skillCooldownRemaining(skill) > 0) {
+      playSound("error");
+      showToast(`재사용 불가: ${TACTICAL_SKILLS[skill].name} 재충전 ${skillCooldownRemaining(skill)}초`, "warning");
+      state.selectedTacticalSkill = null;
+      updateUI();
+      return;
+    }
+    if (!point) {
+      state.selectedTacticalSkill = state.selectedTacticalSkill === "stasis" ? null : "stasis";
+      playSound("click");
+      showBanner("정지장 위치 지정", "전장 위 원하는 지점을 터치하면 100px 돔이 10초간 펼쳐집니다.", 1800);
+      updateUI();
+      return;
+    }
+    const config = TACTICAL_SKILLS.stasis;
+    state.tacticalFields.push({
+      type: "stasis",
+      x: point.x,
+      y: point.y,
+      radius: config.radius,
+      life: config.duration,
+      maxLife: config.duration,
+    });
+    for (const enemy of state.enemies) {
+      if (dist(point, enemy) <= config.radius) {
+        enemy.slowFactor = Math.min(enemy.slowFactor, 0.08);
+        enemy.slowTimer = Math.max(enemy.slowTimer, config.duration);
+        enemy.stunTimer = Math.max(enemy.stunTimer || 0, 0.18);
+      }
+    }
+    burst(point.x, point.y, "#7de9ff", 46, 190);
+    floatingText(point.x, point.y - 18, "정지장 전개", "#baf4ff");
+    playSound("cryo");
+    spendTacticalUse(skill);
+  }
+
+  function useInstantTacticalSkill(skill) {
+    if (!canUseTacticalSkill()) {
+      playSound("error");
+      return;
+    }
+    if (skillCooldownRemaining(skill) > 0) {
+      playSound("error");
+      showToast(`재사용 불가: ${TACTICAL_SKILLS[skill]?.name || "전술"} 재충전 ${skillCooldownRemaining(skill)}초`, "warning");
+      updateUI();
+      return;
+    }
+    if (skill === "overcharge") {
+      state.overchargeTimer = TACTICAL_SKILLS.overcharge.duration;
+      showBanner("합금 과충전", "8초간 처치 합금이 100% 증가합니다.", 1600);
+      floatingText(state.width * 0.5, Math.max(90, state.height * 0.2), "처치 합금 x2", "#ffc85a");
+      playSound("upgrade");
+      spendTacticalUse(skill);
+      return;
+    }
+    if (skill === "emp") {
+      const config = TACTICAL_SKILLS.emp;
+      let affected = 0;
+      for (const enemy of state.enemies) {
+        if (enemy.dead) continue;
+        affected += 1;
+        enemy.stunTimer = Math.max(enemy.stunTimer || 0, config.stun);
+        enemy.fracturedTimer = Math.max(enemy.fracturedTimer || 0, config.fracture);
+        dealDamage(enemy, ENEMY_DEFS[enemy.type]?.boss ? config.damage * 2 : config.damage, null);
+      }
+      state.shock = Math.max(state.shock, 0.65);
+      burst(state.width * 0.5, state.height * 0.5, "#72f7ff", 72, 260);
+      showBanner("EMP 펄스", affected ? `${affected}기 기절 및 취약화.` : "현재 전장에 적이 없습니다.", 1500);
+      playSound("arc");
+      spendTacticalUse(skill);
+    }
+  }
+
+  function drawTacticalFields() {
+    for (const field of state.tacticalFields) {
+      const ratio = Math.max(0, field.life / field.maxLife);
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = `rgba(125, 233, 255, ${0.09 + ratio * 0.05})`;
+      ctx.strokeStyle = `rgba(186, 244, 255, ${0.32 + ratio * 0.28})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(field.x, field.y, field.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([8, 7]);
+      ctx.beginPath();
+      ctx.arc(field.x, field.y, field.radius * (0.78 + Math.sin(state.time * 4) * 0.03), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   function refreshEnemyCaches() {
     state.enemyProgressOrder = [...state.enemies].sort((a, b) => b.progress - a.progress);
     state.enemyRenderOrder = [...state.enemies].sort((a, b) => a.y - b.y);
@@ -2031,7 +2213,8 @@
       const rewardBonus = tower ? slotBonuses(state.slots[tower.slotIndex]).reward : 1;
       const difficultyReward = (DIFFICULTY_DEFS[state.difficulty] || DIFFICULTY_DEFS.easy).reward;
       const salvageReward = 1 + (research.salvage || 0) * 0.04;
-      const reward = Math.ceil(def.reward * rewardBonus * difficultyReward * salvageReward);
+      const overchargeReward = state.overchargeTimer > 0 ? 2 : 1;
+      const reward = Math.ceil(def.reward * rewardBonus * difficultyReward * salvageReward * overchargeReward);
       state.alloy += reward;
       state.runEarned += reward;
       updateUI();
@@ -2216,6 +2399,7 @@
     drawBackground();
     drawPath();
     drawAcidPools();
+    drawTacticalFields();
     drawSlots();
     drawTowerRanges();
     drawTowers();
@@ -2292,6 +2476,7 @@
     hideBanner,
     renderIntelTags,
     showBanner,
+    showToast,
     updateAutoWaveButton,
     updateSelectedLiveMetric,
     updateSoundButton,
@@ -2319,6 +2504,8 @@
     openBaseScreen,
     resetStage,
     closeOverlay,
+    selectTacticalSkill,
+    useInstantTacticalSkill,
   });
   const { handlePrimaryAction, wireEvents } = battleInput;
 

@@ -60,6 +60,26 @@
       ui.start.disabled = state.waveActive || state.gameOver || state.victory;
       ui.start.textContent = state.victory ? "확보 완료" : state.waveActive ? "교전 중" : "웨이브 시작";
       ui.speed.textContent = `${state.speed}x`;
+      if (ui.tacticalUses) ui.tacticalUses.textContent = `전술 ${state.tacticalUses}/${state.tacticalMaxUses}`;
+      const tacticalDisabled = state.gameOver || state.victory || state.tacticalUses <= 0;
+      const tacticalCooldown = (skill) => Math.ceil(state.tacticalCooldowns?.[skill] || 0);
+      if (ui.stasisSkill) {
+        const cooldown = tacticalCooldown("stasis");
+        ui.stasisSkill.disabled = tacticalDisabled || cooldown > 0;
+        ui.stasisSkill.classList.toggle("primary", state.selectedTacticalSkill === "stasis");
+        ui.stasisSkill.textContent = cooldown > 0 ? `정지장 ${cooldown}s` : state.selectedTacticalSkill === "stasis" ? "위치 선택" : "정지장";
+      }
+      if (ui.overchargeSkill) {
+        const cooldown = tacticalCooldown("overcharge");
+        ui.overchargeSkill.disabled = tacticalDisabled || state.overchargeTimer > 0 || cooldown > 0;
+        ui.overchargeSkill.classList.toggle("primary", state.overchargeTimer > 0);
+        ui.overchargeSkill.textContent = state.overchargeTimer > 0 ? `과충전 ${Math.ceil(state.overchargeTimer)}s` : cooldown > 0 ? `과충전 ${cooldown}s` : "과충전";
+      }
+      if (ui.empSkill) {
+        const cooldown = tacticalCooldown("emp");
+        ui.empSkill.disabled = tacticalDisabled || state.enemies.length === 0 || cooldown > 0;
+        ui.empSkill.textContent = cooldown > 0 ? `EMP ${cooldown}s` : "EMP";
+      }
 
       const selectedEmptySlot = state.selectedSlot >= 0 && state.slots[state.selectedSlot] && !state.slots[state.selectedSlot].tower;
       const tower = selectedTower();
@@ -194,11 +214,23 @@
       setTimeout(() => el.remove(), 850);
     }
 
+    function showToast(message, tone = "warning") {
+      if (!ui.floatLayer || !message) return;
+      ui.floatLayer.querySelector(".toast-message")?.remove();
+      const el = document.createElement("span");
+      el.className = `toast-message ${tone}`;
+      el.textContent = message;
+      ui.floatLayer.appendChild(el);
+      announce(message);
+      setTimeout(() => el.remove(), 1800);
+    }
+
     return {
       floatingText,
       hideBanner,
       renderIntelTags,
       showBanner,
+      showToast,
       updateAutoWaveButton,
       updateSelectedLiveMetric,
       updateSoundButton,

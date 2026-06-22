@@ -311,10 +311,54 @@ button:focus-visible {
   animation: floatUp 820ms ease-out forwards;
 }
 
+.toast-message {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 5;
+  max-width: min(86%, 340px);
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 200, 90, 0.42);
+  border-radius: 999px;
+  background: rgba(12, 16, 26, 0.88);
+  color: #fff3b0;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.2;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36), 0 0 18px rgba(255, 200, 90, 0.12);
+  transform: translate(-50%, 12px);
+  animation: toastInOut 1800ms ease both;
+  pointer-events: none;
+}
+
+.toast-message.warning {
+  border-color: rgba(255, 94, 108, 0.48);
+  color: #ffd0d4;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36), 0 0 18px rgba(255, 94, 108, 0.14);
+}
+
 @keyframes floatUp {
   to {
     opacity: 0;
     transform: translate(-50%, -140%);
+  }
+}
+
+@keyframes toastInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  14%,
+  78% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px);
   }
 }
 
@@ -715,6 +759,37 @@ button:focus-visible {
   font-size: 12px;
   white-space: nowrap;
   width: 100%;
+}
+
+.tactical-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.tactical-panel button {
+  min-height: 38px;
+  padding: 0 8px;
+  border-color: rgba(255, 200, 90, 0.28);
+  background: linear-gradient(180deg, rgba(54, 44, 27, 0.96), rgba(26, 23, 18, 0.96));
+  color: #fff3b0;
+  font-size: 12px;
+}
+
+.tactical-panel button.primary {
+  border-color: rgba(125, 233, 255, 0.68);
+  background: linear-gradient(180deg, rgba(34, 94, 112, 0.96), rgba(20, 49, 67, 0.96));
+  color: #e6fbff;
+}
+
+.tactical-uses {
+  min-width: 58px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 950;
+  text-align: right;
 }
 
 .difficulty-row {

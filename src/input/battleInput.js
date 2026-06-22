@@ -24,6 +24,8 @@
       openBaseScreen,
       resetStage,
       closeOverlay,
+      selectTacticalSkill,
+      useInstantTacticalSkill,
     } = deps;
 
     function canvasPoint(event) {
@@ -52,6 +54,10 @@
     function handleCanvasTap(event) {
       event.preventDefault();
       const p = canvasPoint(event);
+      if (state.selectedTacticalSkill === "stasis") {
+        selectTacticalSkill("stasis", p);
+        return;
+      }
       const coarse = isCoarsePointer(event);
       const pickupRadius = coarse ? 46 : 34;
       const forgivenessRadius = coarse ? 62 : 44;
@@ -114,6 +120,9 @@
         state.speed = state.speed === 1 ? 2 : state.speed === 2 ? 3 : 1;
         updateUI();
       });
+      ui.stasisSkill?.addEventListener("click", () => selectTacticalSkill("stasis"));
+      ui.overchargeSkill?.addEventListener("click", () => useInstantTacticalSkill("overcharge"));
+      ui.empSkill?.addEventListener("click", () => useInstantTacticalSkill("emp"));
       ui.autoWave.addEventListener("click", () => {
         playSound("click");
         state.autoWave = !state.autoWave;
