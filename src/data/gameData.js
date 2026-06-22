@@ -60,6 +60,7 @@
     shellguard: { name: "갑각 수호체", hp: 300, speed: 30, reward: 13, radius: 18, color: "#6ec8ff", armor: 10, guardAura: { radius: 80, armor: 3 } },
     ironclad: { name: "철갑 타이탄", hp: 520, speed: 22, reward: 18, radius: 22, color: "#b8c7d9", armor: 18, special: "느리지만 거대하고 두꺼운 장갑으로 전선을 밀어붙이는 중장 개체입니다." },
     swarming: { name: "스웜링", hp: 24, speed: 63, reward: 2, radius: 7, color: "#a1ffcf", armor: 0 },
+    bonuscarrier: { name: "합금 운반자", hp: 85, speed: 96, reward: 100, radius: 12, color: "#ffc85a", armor: 0, bonus: true, special: "합금 상자를 짊어진 고속 보너스 유닛입니다. 처치 시 합금 100을 드롭합니다." },
     broodcarrier: {
       name: "기생 운반체",
       hp: 118,
