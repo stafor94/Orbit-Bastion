@@ -767,6 +767,7 @@ button:focus-visible {
   align-items: center;
   gap: 6px;
   margin-top: 7px;
+  margin-bottom: 7px;
 }
 
 .tactical-panel button {

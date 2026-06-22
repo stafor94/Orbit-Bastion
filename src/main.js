@@ -104,8 +104,8 @@
     acidPools: [],
     tacticalFields: [],
     selectedTacticalSkill: null,
-    tacticalUses: 2,
-    tacticalMaxUses: 2,
+    tacticalUses: { stasis: 2, overcharge: 2, emp: 2 },
+    tacticalMaxUses: { stasis: 2, overcharge: 2, emp: 2 },
     tacticalCooldowns: { stasis: 0, overcharge: 0, emp: 0 },
     tacticalUiRefreshTimer: 0,
     overchargeTimer: 0,
@@ -1038,7 +1038,7 @@
     state.acidPools = [];
     state.tacticalFields = [];
     state.selectedTacticalSkill = null;
-    state.tacticalUses = state.tacticalMaxUses;
+    state.tacticalUses = { ...state.tacticalMaxUses };
     state.tacticalCooldowns = { stasis: 0, overcharge: 0, emp: 0 };
     state.tacticalUiRefreshTimer = 0;
     state.overchargeTimer = 0;
@@ -2043,6 +2043,7 @@
     for (const field of state.tacticalFields) field.life -= dt;
     state.tacticalFields = state.tacticalFields.filter((field) => field.life > 0);
     state.tacticalUiRefreshTimer = Math.max(0, state.tacticalUiRefreshTimer - dt);
+    if (hadOvercharge && state.overchargeTimer <= 0) showToast("합금 과충전 종료", "default");
     if ((hadOvercharge || cooldownActive) && state.tacticalUiRefreshTimer <= 0) {
       state.tacticalUiRefreshTimer = 0.25;
       updateUI();
@@ -2058,8 +2059,12 @@
     }
   }
 
-  function canUseTacticalSkill() {
-    return state.screen === "battle" && !state.gameOver && !state.victory && state.tacticalUses > 0;
+  function tacticalUsesRemaining(skill) {
+    return Math.max(0, state.tacticalUses[skill] || 0);
+  }
+
+  function canUseTacticalSkill(skill) {
+    return state.screen === "battle" && !state.gameOver && !state.victory && tacticalUsesRemaining(skill) > 0;
   }
 
   function skillCooldownRemaining(skill) {
@@ -2067,7 +2072,7 @@
   }
 
   function spendTacticalUse(skill) {
-    state.tacticalUses = Math.max(0, state.tacticalUses - 1);
+    state.tacticalUses[skill] = Math.max(0, tacticalUsesRemaining(skill) - 1);
     state.tacticalCooldowns[skill] = TACTICAL_SKILLS[skill]?.cooldown || 30;
     state.tacticalUiRefreshTimer = 0;
     state.selectedTacticalSkill = null;
@@ -2075,11 +2080,12 @@
   }
 
   function selectTacticalSkill(skill, point = null) {
-    if (!canUseTacticalSkill()) {
+    if (skill !== "stasis") return;
+    if (!canUseTacticalSkill(skill)) {
       playSound("error");
+      showToast(`사용 불가: ${TACTICAL_SKILLS[skill].name} 잔여 횟수 없음`, "warning");
       return;
     }
-    if (skill !== "stasis") return;
     if (skillCooldownRemaining(skill) > 0) {
       playSound("error");
       showToast(`재사용 불가: ${TACTICAL_SKILLS[skill].name} 재충전 ${skillCooldownRemaining(skill)}초`, "warning");
@@ -2117,8 +2123,9 @@
   }
 
   function useInstantTacticalSkill(skill) {
-    if (!canUseTacticalSkill()) {
+    if (!canUseTacticalSkill(skill)) {
       playSound("error");
+      showToast(`사용 불가: ${TACTICAL_SKILLS[skill]?.name || "전술"} 잔여 횟수 없음`, "warning");
       return;
     }
     if (skillCooldownRemaining(skill) > 0) {

@@ -60,25 +60,30 @@
       ui.start.disabled = state.waveActive || state.gameOver || state.victory;
       ui.start.textContent = state.victory ? "확보 완료" : state.waveActive ? "교전 중" : "웨이브 시작";
       ui.speed.textContent = `${state.speed}x`;
-      if (ui.tacticalUses) ui.tacticalUses.textContent = `전술 ${state.tacticalUses}/${state.tacticalMaxUses}`;
-      const tacticalDisabled = state.gameOver || state.victory || state.tacticalUses <= 0;
+      const tacticalUse = (skill) => Math.max(0, state.tacticalUses?.[skill] || 0);
+      const tacticalMax = (skill) => Math.max(0, state.tacticalMaxUses?.[skill] || 0);
+      if (ui.tacticalUses) ui.tacticalUses.textContent = `전술 ${Object.keys(state.tacticalMaxUses || {}).map((skill) => tacticalUse(skill)).join("/")}`;
+      const tacticalDisabled = state.gameOver || state.victory;
       const tacticalCooldown = (skill) => Math.ceil(state.tacticalCooldowns?.[skill] || 0);
       if (ui.stasisSkill) {
         const cooldown = tacticalCooldown("stasis");
-        ui.stasisSkill.disabled = tacticalDisabled || cooldown > 0;
+        const uses = tacticalUse("stasis");
+        ui.stasisSkill.disabled = tacticalDisabled || cooldown > 0 || uses <= 0;
         ui.stasisSkill.classList.toggle("primary", state.selectedTacticalSkill === "stasis");
-        ui.stasisSkill.textContent = cooldown > 0 ? `정지장 ${cooldown}s` : state.selectedTacticalSkill === "stasis" ? "위치 선택" : "정지장";
+        ui.stasisSkill.textContent = cooldown > 0 ? `정지장 ${cooldown}s` : state.selectedTacticalSkill === "stasis" ? "위치 선택" : `정지장 ${uses}/${tacticalMax("stasis")}`;
       }
       if (ui.overchargeSkill) {
         const cooldown = tacticalCooldown("overcharge");
-        ui.overchargeSkill.disabled = tacticalDisabled || state.overchargeTimer > 0 || cooldown > 0;
+        const uses = tacticalUse("overcharge");
+        ui.overchargeSkill.disabled = tacticalDisabled || state.overchargeTimer > 0 || cooldown > 0 || uses <= 0;
         ui.overchargeSkill.classList.toggle("primary", state.overchargeTimer > 0);
-        ui.overchargeSkill.textContent = state.overchargeTimer > 0 ? `과충전 ${Math.ceil(state.overchargeTimer)}s` : cooldown > 0 ? `과충전 ${cooldown}s` : "과충전";
+        ui.overchargeSkill.textContent = state.overchargeTimer > 0 ? `과충전 ${Math.ceil(state.overchargeTimer)}s` : cooldown > 0 ? `과충전 ${cooldown}s` : `과충전 ${uses}/${tacticalMax("overcharge")}`;
       }
       if (ui.empSkill) {
         const cooldown = tacticalCooldown("emp");
-        ui.empSkill.disabled = tacticalDisabled || state.enemies.length === 0 || cooldown > 0;
-        ui.empSkill.textContent = cooldown > 0 ? `EMP ${cooldown}s` : "EMP";
+        const uses = tacticalUse("emp");
+        ui.empSkill.disabled = tacticalDisabled || state.enemies.length === 0 || cooldown > 0 || uses <= 0;
+        ui.empSkill.textContent = cooldown > 0 ? `EMP ${cooldown}s` : `EMP ${uses}/${tacticalMax("emp")}`;
       }
 
       const selectedEmptySlot = state.selectedSlot >= 0 && state.slots[state.selectedSlot] && !state.slots[state.selectedSlot].tower;
