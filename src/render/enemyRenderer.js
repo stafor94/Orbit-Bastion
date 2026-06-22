@@ -114,6 +114,7 @@
       else if (enemy.type === "shieldmatron") drawShieldMatron(enemy, def, hpT);
       else if (enemy.type === "riftbehemoth") drawRiftBehemoth(enemy, def, hpT);
       else if (enemy.type === "broodcocoon") drawBroodCocoon(enemy, def, hpT);
+      else if (enemy.type === "bonuscarrier") drawBonusCarrier(enemy, def, hpT);
       else drawAlien(enemy, def, hpT);
     }
 
@@ -173,6 +174,34 @@
         ctx.arc(0, 0, r + 8 + Math.sin(enemy.phase * 12) * 2, -0.8, 0.8);
         ctx.stroke();
       }
+    }
+
+    function drawBonusCarrier(enemy, def, hpT) {
+      drawAlien(enemy, def, hpT);
+      const r = enemy.radius;
+      ctx.save();
+      ctx.translate(0, -r * 0.45);
+      ctx.fillStyle = "rgba(255, 200, 90, 0.95)";
+      ctx.strokeStyle = "rgba(255, 243, 176, 0.9)";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.roundRect(-r * 0.62, -r * 0.58, r * 1.24, r * 0.78, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(83, 57, 24, 0.72)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.42, -r * 0.2);
+      ctx.lineTo(r * 0.42, -r * 0.2);
+      ctx.moveTo(0, -r * 0.58);
+      ctx.lineTo(0, r * 0.2);
+      ctx.stroke();
+      ctx.fillStyle = "#3b2a13";
+      ctx.font = "900 8px 'Noto Sans KR', 'Malgun Gothic', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("₿", 0, -r * 0.22);
+      ctx.restore();
     }
 
     function drawStatusIcon(x, y, r, color, kind) {
