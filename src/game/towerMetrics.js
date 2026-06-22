@@ -15,7 +15,7 @@
 
   function towerBaseRange(type, baseRange, level, branch) {
     if (type === "beacon") {
-      return branch === "amplify" ? 250 : BEACON_RANGES[levelIndex(level)];
+      return branch === "amplify" ? BEACON_RANGES[levelIndex(level)] + 100 : BEACON_RANGES[levelIndex(level)];
     }
     return baseRange * (1 + levelIndex(level) * 0.08);
   }

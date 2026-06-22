@@ -2065,7 +2065,7 @@
   }
 
   function canUseTacticalSkill(skill) {
-    return state.screen === "battle" && !state.gameOver && !state.victory && tacticalUsesRemaining(skill) > 0;
+    return state.screen === "battle" && state.waveActive && !state.gameOver && !state.victory && tacticalUsesRemaining(skill) > 0;
   }
 
   function skillCooldownRemaining(skill) {
@@ -2074,7 +2074,7 @@
 
   function spendTacticalUse(skill) {
     state.tacticalUses[skill] = Math.max(0, tacticalUsesRemaining(skill) - 1);
-    state.tacticalCooldowns[skill] = TACTICAL_SKILLS[skill]?.cooldown || 30;
+    state.tacticalCooldowns[skill] = state.tacticalUses[skill] > 0 ? TACTICAL_SKILLS[skill]?.cooldown || 30 : 0;
     state.tacticalUiRefreshTimer = 0;
     if (skill === "stasis") state.stasisPreview = null;
     state.selectedTacticalSkill = null;
@@ -2411,7 +2411,7 @@
         snare: "흡인 반경 +50%",
       },
       beacon: {
-        amplify: "지원 범위 250, 주변 타워 피해 +30%, 공격 주기 -20%",
+        amplify: "지원 범위 +100",
         overclock: "주변 타워 피해 +40%, 공격 주기 -30%",
       },
     };

@@ -7,7 +7,7 @@ assert.deepEqual(
   [1, 2, 3].map((level) => metrics.towerBaseRange("beacon", 160, level, null)),
   [140, 155, 170],
 );
-assert.equal(metrics.towerBaseRange("beacon", 160, 3, "amplify"), 250);
+assert.equal(metrics.towerBaseRange("beacon", 160, 3, "amplify"), 270);
 assert.deepEqual(
   [1, 2, 3].map((level) => metrics.auraDamageBoost(level, null)),
   [0.1, 0.2, 0.3],
