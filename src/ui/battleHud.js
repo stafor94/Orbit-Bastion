@@ -70,7 +70,7 @@
         const uses = tacticalUse("stasis");
         ui.stasisSkill.disabled = tacticalDisabled || cooldown > 0 || uses <= 0;
         ui.stasisSkill.classList.toggle("primary", state.selectedTacticalSkill === "stasis");
-        ui.stasisSkill.textContent = cooldown > 0 ? `정지장 ${cooldown}s` : state.selectedTacticalSkill === "stasis" ? "위치 선택" : `정지장 ${uses}/${tacticalMax("stasis")}`;
+        ui.stasisSkill.textContent = cooldown > 0 ? `정지장 ${cooldown}s` : state.stasisPreview ? "정지장 취소" : state.selectedTacticalSkill === "stasis" ? "위치 선택" : `정지장 ${uses}/${tacticalMax("stasis")}`;
       }
       if (ui.overchargeSkill) {
         const cooldown = tacticalCooldown("overcharge");

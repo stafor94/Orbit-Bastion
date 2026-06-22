@@ -103,6 +103,7 @@
     particles: [],
     acidPools: [],
     tacticalFields: [],
+    stasisPreview: null,
     selectedTacticalSkill: null,
     tacticalUses: { stasis: 2, overcharge: 2, emp: 2 },
     tacticalMaxUses: { stasis: 2, overcharge: 2, emp: 2 },
@@ -1037,6 +1038,7 @@
     state.particles = [];
     state.acidPools = [];
     state.tacticalFields = [];
+    state.stasisPreview = null;
     state.selectedTacticalSkill = null;
     state.tacticalUses = { ...state.tacticalMaxUses };
     state.tacticalCooldowns = { stasis: 0, overcharge: 0, emp: 0 };
@@ -2075,12 +2077,25 @@
     state.tacticalUses[skill] = Math.max(0, tacticalUsesRemaining(skill) - 1);
     state.tacticalCooldowns[skill] = TACTICAL_SKILLS[skill]?.cooldown || 30;
     state.tacticalUiRefreshTimer = 0;
+    if (skill === "stasis") state.stasisPreview = null;
     state.selectedTacticalSkill = null;
+    updateUI();
+  }
+
+  function cancelStasisPreview(showMessage = true) {
+    state.stasisPreview = null;
+    state.selectedTacticalSkill = null;
+    playSound("click");
+    if (showMessage) showToast("정지장 투하 취소", "default");
     updateUI();
   }
 
   function selectTacticalSkill(skill, point = null) {
     if (skill !== "stasis") return;
+    if (!point && state.selectedTacticalSkill === "stasis") {
+      cancelStasisPreview();
+      return;
+    }
     if (!canUseTacticalSkill(skill)) {
       playSound("error");
       showToast(`사용 불가: ${TACTICAL_SKILLS[skill].name} 잔여 횟수 없음`, "warning");
@@ -2094,30 +2109,44 @@
       return;
     }
     if (!point) {
-      state.selectedTacticalSkill = state.selectedTacticalSkill === "stasis" ? null : "stasis";
+      state.selectedTacticalSkill = "stasis";
+      state.stasisPreview = null;
       playSound("click");
-      showBanner("정지장 위치 지정", "전장 위 원하는 지점을 터치하면 100px 돔이 10초간 펼쳐집니다.", 1800);
+      showBanner("정지장 위치 지정", "전장 위 원하는 지점을 터치하면 범위가 표시됩니다. 가운데를 한 번 더 눌러 발동하세요.", 2200);
       updateUI();
       return;
     }
     const config = TACTICAL_SKILLS.stasis;
+    if (!state.stasisPreview) {
+      state.stasisPreview = { x: point.x, y: point.y, radius: config.radius };
+      playSound("click");
+      showToast("정지장 범위 확인: 가운데를 다시 누르면 발동", "default");
+      updateUI();
+      return;
+    }
+    if (dist(point, state.stasisPreview) > 34) {
+      playSound("error");
+      showToast("정지장 중앙을 다시 눌러 발동하세요", "warning");
+      return;
+    }
+    const targetPoint = state.stasisPreview;
     state.tacticalFields.push({
       type: "stasis",
-      x: point.x,
-      y: point.y,
+      x: targetPoint.x,
+      y: targetPoint.y,
       radius: config.radius,
       life: config.duration,
       maxLife: config.duration,
     });
     for (const enemy of state.enemies) {
-      if (dist(point, enemy) <= config.radius) {
+      if (dist(targetPoint, enemy) <= config.radius) {
         enemy.slowFactor = Math.min(enemy.slowFactor, 0.08);
         enemy.slowTimer = Math.max(enemy.slowTimer, config.duration);
         enemy.stunTimer = Math.max(enemy.stunTimer || 0, 0.18);
       }
     }
-    burst(point.x, point.y, "#7de9ff", 46, 190);
-    floatingText(point.x, point.y - 18, "정지장 전개", "#baf4ff");
+    burst(targetPoint.x, targetPoint.y, "#7de9ff", 46, 190);
+    floatingText(targetPoint.x, targetPoint.y - 18, "정지장 전개", "#baf4ff");
     playSound("cryo");
     spendTacticalUse(skill);
   }
@@ -2161,6 +2190,25 @@
   }
 
   function drawTacticalFields() {
+    if (state.stasisPreview) {
+      const preview = state.stasisPreview;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = "rgba(125, 233, 255, 0.045)";
+      ctx.strokeStyle = "rgba(186, 244, 255, 0.72)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath();
+      ctx.arc(preview.x, preview.y, preview.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(186, 244, 255, 0.9)";
+      ctx.beginPath();
+      ctx.arc(preview.x, preview.y, 8 + Math.sin(state.time * 6) * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
     for (const field of state.tacticalFields) {
       const ratio = Math.max(0, field.life / field.maxLife);
       ctx.save();

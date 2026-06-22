@@ -770,6 +770,10 @@ button:focus-visible {
   margin-bottom: 7px;
 }
 
+.footer-actions + .tactical-panel {
+  display: none;
+}
+
 .tactical-panel button {
   min-height: 38px;
   padding: 0 8px;
