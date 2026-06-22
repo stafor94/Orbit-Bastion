@@ -75,7 +75,7 @@
       { id: "snare", name: "구속자", desc: "흡인 반경이 50% 증가합니다." },
     ],
     beacon: [
-      { id: "amplify", name: "증폭", desc: "지원 범위가 넓어지고 주변 타워의 화력이 강화됩니다." },
+      { id: "amplify", name: "증폭", desc: "지원 범위 +100" },
       { id: "overclock", name: "과부하", desc: "주변 타워의 공격 보정이 더 강해집니다." },
     ],
   });
