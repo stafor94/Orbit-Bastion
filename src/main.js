@@ -29,7 +29,6 @@
     stasisSkill: $("stasisSkillButton"),
     overchargeSkill: $("overchargeSkillButton"),
     empSkill: $("empSkillButton"),
-    tacticalUses: $("tacticalUsesValue"),
     waveSummary: $("waveSummary"),
     waveGroups: $("waveGroups"),
     threatSummary: $("threatSummary"),

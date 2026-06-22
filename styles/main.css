@@ -763,7 +763,7 @@ button:focus-visible {
 
 .tactical-panel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 6px;
   margin-top: 7px;
@@ -787,14 +787,6 @@ button:focus-visible {
   border-color: rgba(125, 233, 255, 0.68);
   background: linear-gradient(180deg, rgba(34, 94, 112, 0.96), rgba(20, 49, 67, 0.96));
   color: #e6fbff;
-}
-
-.tactical-uses {
-  min-width: 58px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 950;
-  text-align: right;
 }
 
 .difficulty-row {
