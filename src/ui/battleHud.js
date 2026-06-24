@@ -62,8 +62,11 @@
       ui.speed.textContent = `${state.speed}x`;
       const tacticalUse = (skill) => Math.max(0, state.tacticalUses?.[skill] || 0);
       const tacticalMax = (skill) => Math.max(0, state.tacticalMaxUses?.[skill] || 0);
+      const tacticalUses = ["stasis", "overcharge", "emp"].reduce((total, skill) => total + tacticalUse(skill), 0);
+      const tacticalMaxUses = ["stasis", "overcharge", "emp"].reduce((total, skill) => total + tacticalMax(skill), 0);
       const tacticalDisabled = !state.waveActive || state.gameOver || state.victory;
       const tacticalCooldown = (skill) => Math.ceil(state.tacticalCooldowns?.[skill] || 0);
+      if (ui.tacticalUses) ui.tacticalUses.textContent = `전술 ${tacticalUses}/${tacticalMaxUses}`;
       if (ui.stasisSkill) {
         const cooldown = tacticalCooldown("stasis");
         const uses = tacticalUse("stasis");
