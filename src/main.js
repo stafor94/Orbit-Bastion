@@ -223,6 +223,7 @@
   Object.assign(DIFFICULTY_DEFS, window.OrbitDifficulties?.defs || {});
   const difficultyOrder = window.OrbitDifficulties?.order || Object.keys(DIFFICULTY_DEFS);
   const DEFAULT_UNLOCKED_DIFFICULTY_INDEX = Math.min(difficultyOrder.length - 1, 2);
+  const BASE_STAGE_COUNT = 10;
   const BOSS_MINION_BASE_COOLDOWN = 15;
   const TACTICAL_SKILLS = {
     stasis: { name: "정지장 투하", radius: 100, duration: 10, cooldown: 30 },
@@ -276,6 +277,7 @@
     getOpenBaseScreen: () => openBaseScreen,
     resetStage,
     playSound,
+    visibleStageCount: (difficulty) => visibleStageCount(difficulty),
     difficultyProgressKey,
     applyTowerUpgrade,
     branchDetailText,
@@ -307,7 +309,7 @@
   }
 
   function getSavedStageIndex(difficulty = state.difficulty) {
-    return clampDifficultyStageIndex(localStorage.getItem(difficultyProgressKey("stage", difficulty)) || 0);
+    return clampDifficultyStageIndex(localStorage.getItem(difficultyProgressKey("stage", difficulty)) || 0, difficulty);
   }
 
   function setSavedStageIndex(value, difficulty = state.difficulty) {
@@ -1012,7 +1014,7 @@
   }
 
   function resetStage(nextStage) {
-    if (typeof nextStage === "number") state.stageIndex = nextStage % STAGES.length;
+    if (typeof nextStage === "number") state.stageIndex = clampDifficultyStageIndex(nextStage);
     window.clearTimeout(scheduleAutoWave.timer);
     setSavedStageIndex(state.stageIndex);
     const stage = STAGES[state.stageIndex];
@@ -2564,6 +2566,7 @@
     openBaseScreen,
     resetStage,
     closeOverlay,
+    visibleStageCount: (difficulty) => visibleStageCount(difficulty),
     selectTacticalSkill,
     useInstantTacticalSkill,
   });
