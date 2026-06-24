@@ -67,6 +67,18 @@
       </section>
 
       <section class="command-panel" aria-label="타워 명령">
+        <div class="battle-intel" aria-label="웨이브 정보">
+          <div class="intel-card">
+            <span>다음 웨이브</span>
+            <strong id="waveSummary">대기 중</strong>
+            <div id="waveGroups" class="intel-tags"></div>
+          </div>
+          <div class="intel-card">
+            <span>실시간 위협</span>
+            <strong id="threatSummary">적 정보 없음</strong>
+            <div id="threatTags" class="intel-tags"></div>
+          </div>
+        </div>
         <div id="selectedCard" class="selected-card" aria-live="polite">
           <div>
             <span id="selectedLabel" class="label">선택 없음</span>
@@ -93,7 +105,7 @@
           <button id="stasisSkillButton" type="button">정지장</button>
           <button id="overchargeSkillButton" type="button">과충전</button>
           <button id="empSkillButton" type="button">EMP</button>
-          <span id="tacticalUsesValue" class="tactical-uses">전술 2/2</span>
+          <span id="tacticalUsesValue" class="tactical-uses">전술 6/6</span>
         </div>
       </section>
 
