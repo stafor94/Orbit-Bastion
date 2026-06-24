@@ -17,6 +17,7 @@
       confirmProgressReset,
       exportSaveBackup,
       getClearedStages,
+      visibleStageCount,
       importSaveBackup,
       isDifficultyUnlocked,
       applyDifficultyChoice,
@@ -66,6 +67,7 @@
 
     function openBaseScreen() {
       state.screen = "base";
+      const stageCount = visibleStageCount();
       const cleared = getClearedStages();
       const research = researchPoints();
       ui.overlay.classList.add("active");
@@ -82,14 +84,14 @@
         </div>
         <div class="screen-grid base-grid">
           <div class="meta-row">
-            <div class="meta-box"><span class="meta-label">진행</span><strong>${cleared}/${STAGES.length}</strong></div>
+            <div class="meta-box"><span class="meta-label">진행</span><strong>${cleared}/${stageCount}</strong></div>
             <div class="meta-box"><span class="meta-label">연구</span><strong>${research}</strong></div>
             <div class="meta-box"><span class="meta-label">난이도</span><strong>${DIFFICULTY_DEFS[state.difficulty].label}</strong></div>
           </div>
           <button id="openDifficultyButton" type="button">난이도 변경</button>
           <div class="stage-scroll">
             <div class="stage-list">
-              ${STAGES.map((stage, index) => {
+              ${STAGES.slice(0, stageCount).map((stage, index) => {
                 const locked = index > cleared;
                 const status = index < cleared ? "확보" : index === cleared ? "출격" : "잠금";
                 return `
@@ -132,7 +134,7 @@
         });
       });
       window.setTimeout(() => {
-        const focusIndex = Math.min(state.stageIndex, STAGES.length - 1);
+        const focusIndex = Math.min(state.stageIndex, stageCount - 1);
         ui.overlay.querySelector(`[data-stage="${focusIndex}"]`)?.scrollIntoView({ block: "nearest" });
       }, 0);
       if (typeof consumePendingDifficultyUnlock === "function") {

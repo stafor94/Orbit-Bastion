@@ -32,6 +32,7 @@
       getOpenBaseScreen,
       resetStage,
       playSound,
+      visibleStageCount,
       difficultyProgressKey,
       applyTowerUpgrade,
       branchDetailText,
@@ -435,7 +436,7 @@
         closeOverlay();
       });
       ui.overlay.querySelector("#resultBaseButton").addEventListener("click", () => {
-        const next = victory ? Math.min(state.stageIndex + 1, STAGES.length - 1) : state.stageIndex;
+        const next = victory ? Math.min(state.stageIndex + 1, visibleStageCount() - 1) : state.stageIndex;
         resetStage(next);
         getOpenBaseScreen()();
       });
