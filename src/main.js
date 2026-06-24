@@ -223,6 +223,7 @@
   Object.assign(DIFFICULTY_DEFS, window.OrbitDifficulties?.defs || {});
   const difficultyOrder = window.OrbitDifficulties?.order || Object.keys(DIFFICULTY_DEFS);
   const DEFAULT_UNLOCKED_DIFFICULTY_INDEX = Math.min(difficultyOrder.length - 1, 2);
+  const BASE_STAGE_COUNT = 10;
   const BOSS_MINION_BASE_COOLDOWN = 15;
   const TACTICAL_SKILLS = {
     stasis: { name: "정지장 투하", radius: 100, duration: 10, cooldown: 30 },
@@ -243,6 +244,12 @@
 
   function stageResearchRewardForDifficulty(difficulty = state.difficulty) {
     return DIFFICULTY_RESEARCH_REWARD[difficulty] || 0;
+  }
+
+  function campaignStageCount(difficulty = state.difficulty) {
+    const baseCampaignStageCount = Math.min(10, STAGES.length);
+    if (difficulty === "nightmare") return STAGES.length;
+    return baseCampaignStageCount;
   }
 
   const battleOverlays = window.OrbitBattleOverlays.create({
@@ -276,6 +283,7 @@
     getOpenBaseScreen: () => openBaseScreen,
     resetStage,
     playSound,
+    visibleStageCount: (difficulty) => visibleStageCount(difficulty),
     difficultyProgressKey,
     applyTowerUpgrade,
     branchDetailText,
@@ -290,24 +298,28 @@
     openResultScreen,
   } = battleOverlays;
 
-  function clampDifficultyStageIndex(value) {
-    return Math.max(0, Math.min(STAGES.length - 1, Number(value) || 0));
+  function campaignStageCount(difficulty = state.difficulty) {
+    return difficulty === "nightmare" ? STAGES.length : Math.min(10, STAGES.length);
+  }
+
+  function clampDifficultyStageIndex(value, difficulty = state.difficulty) {
+    return Math.max(0, Math.min(campaignStageCount(difficulty) - 1, Number(value) || 0));
   }
 
   function getClearedStages(difficulty = state.difficulty) {
-    return Math.max(0, Math.min(STAGES.length, Number(localStorage.getItem(difficultyProgressKey("cleared", difficulty)) || 0)));
+    return Math.max(0, Math.min(campaignStageCount(difficulty), Number(localStorage.getItem(difficultyProgressKey("cleared", difficulty)) || 0)));
   }
 
   function setClearedStages(value, difficulty = state.difficulty) {
-    localStorage.setItem(difficultyProgressKey("cleared", difficulty), String(Math.max(0, Math.min(STAGES.length, Math.floor(value)))));
+    localStorage.setItem(difficultyProgressKey("cleared", difficulty), String(Math.max(0, Math.min(campaignStageCount(difficulty), Math.floor(value)))));
   }
 
   function getSavedStageIndex(difficulty = state.difficulty) {
-    return clampDifficultyStageIndex(localStorage.getItem(difficultyProgressKey("stage", difficulty)) || 0);
+    return clampDifficultyStageIndex(localStorage.getItem(difficultyProgressKey("stage", difficulty)) || 0, difficulty);
   }
 
   function setSavedStageIndex(value, difficulty = state.difficulty) {
-    localStorage.setItem(difficultyProgressKey("stage", difficulty), String(clampDifficultyStageIndex(value)));
+    localStorage.setItem(difficultyProgressKey("stage", difficulty), String(clampDifficultyStageIndex(value, difficulty)));
   }
 
   function getHighestUnlockedDifficultyIndex() {
@@ -1008,7 +1020,7 @@
   }
 
   function resetStage(nextStage) {
-    if (typeof nextStage === "number") state.stageIndex = nextStage % STAGES.length;
+    if (typeof nextStage === "number") state.stageIndex = clampDifficultyStageIndex(nextStage);
     window.clearTimeout(scheduleAutoWave.timer);
     setSavedStageIndex(state.stageIndex);
     const stage = STAGES[state.stageIndex];
@@ -2305,12 +2317,14 @@
     state.waveIndex += 1;
     if (state.waveIndex >= state.waves.length) {
       state.victory = true;
+      const stageCount = campaignStageCount();
       const previousCleared = getClearedStages();
       const cleared = Math.max(previousCleared, state.stageIndex + 1);
-      const finalStageCleared = state.stageIndex >= STAGES.length - 1;
+      const finalStageIndex = campaignStageCount(state.difficulty) - 1;
+      const finalStageCleared = state.stageIndex >= finalStageIndex;
       let unlockedDifficultyId = null;
       setClearedStages(cleared);
-      setSavedStageIndex(finalStageCleared ? state.stageIndex : state.stageIndex + 1);
+      setSavedStageIndex(finalStageCleared ? state.stageIndex : Math.min(state.stageIndex + 1, finalStageIndex));
       if (finalStageCleared) {
         const nextId = nextDifficultyId();
         if (nextId && !isDifficultyUnlocked(nextId)) {
@@ -2325,7 +2339,8 @@
       }
       window.clearTimeout(scheduleAutoWave.timer);
       state.autoWaveDueAt = 0;
-      const nextStageName = STAGES[(state.stageIndex + 1) % STAGES.length].name;
+      const nextStageIndex = finalStageCleared ? finalStageIndex : Math.min(state.stageIndex + 1, finalStageIndex);
+      const nextStageName = STAGES[nextStageIndex].name;
       const researchBanner = state.runResearchReward > 0
         ? `연구 점수 +${state.runResearchReward}. 다음 전장인 ${nextStageName} 구역으로 이동할 수 있습니다.`
         : `이미 클리어한 스테이지입니다. 연구 점수는 추가로 지급되지 않습니다. 다음 전장인 ${nextStageName} 구역으로 이동할 수 있습니다.`;
@@ -2371,6 +2386,7 @@
     confirmProgressReset: () => confirmProgressReset(),
     exportSaveBackup: () => exportSaveBackup(),
     getClearedStages: (difficulty) => getClearedStages(difficulty),
+    campaignStageCount: (difficulty) => campaignStageCount(difficulty),
     importSaveBackup: () => importSaveBackup(),
     isDifficultyUnlocked: (difficultyId) => isDifficultyUnlocked(difficultyId),
     applyDifficultyChoice: (difficultyId) => applyDifficultyChoice(difficultyId),
@@ -2558,6 +2574,7 @@
     openBaseScreen,
     resetStage,
     closeOverlay,
+    visibleStageCount: (difficulty) => visibleStageCount(difficulty),
     selectTacticalSkill,
     useInstantTacticalSkill,
   });
