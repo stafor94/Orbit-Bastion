@@ -64,6 +64,7 @@
     SLOT_KINDS,
   } = window.OrbitGameData;
   const towerMetrics = window.OrbitTowerMetrics;
+  const towerTypes = new Set(Object.keys(TOWER_DEFS));
   const researchPresentation = window.OrbitResearchPresentation || { categories: [{ id: "all", name: "전체" }], defs: {} };
   const RESEARCH_CATEGORIES = researchPresentation.categories || [{ id: "all", name: "전체" }];
 
@@ -411,6 +412,26 @@
     return true;
   }
 
+  function finiteNumber(value, fallback = 0) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
+
+  function finiteInteger(value, fallback = 0) {
+    return Math.floor(finiteNumber(value, fallback));
+  }
+
+  function normalizeResearchLevels(rawLevels) {
+    const normalized = { ...DEFAULT_RESEARCH };
+    const source = rawLevels && typeof rawLevels === "object" ? rawLevels : {};
+    for (const def of RESEARCH_DEFS) {
+      if (source[def.id] === undefined) continue;
+      const maxLevel = towerTypes.has(def.id) ? 1 : def.max;
+      normalized[def.id] = Math.max(0, Math.min(maxLevel, finiteInteger(source[def.id], normalized[def.id] || 0)));
+    }
+    return normalized;
+  }
+
   function applySaveBackup(payload) {
     const data = payload?.data;
     if (!data || typeof data !== "object") throw new Error("invalid backup");
@@ -418,23 +439,26 @@
 
     difficultyOrder.forEach((difficultyId) => {
       const progress = data.progress[difficultyId] || {};
-      setClearedStages(progress.cleared || 0, difficultyId);
-      setSavedStageIndex(progress.stage || 0, difficultyId);
+      setClearedStages(finiteInteger(progress.cleared, 0), difficultyId);
+      setSavedStageIndex(finiteInteger(progress.stage, 0), difficultyId);
     });
 
-    setResearchPoints(data.research || 0);
-    saveResearchLevels({ ...DEFAULT_RESEARCH, ...(data.researchLevels || {}) });
+    setResearchPoints(finiteInteger(data.research, 0));
+    saveResearchLevels(normalizeResearchLevels(data.researchLevels));
     setHighestUnlockedDifficultyIndex(
       Math.max(
         DEFAULT_UNLOCKED_DIFFICULTY_INDEX,
-        Math.min(difficultyOrder.length - 1, Number(data.unlockedDifficultyIndex) || DEFAULT_UNLOCKED_DIFFICULTY_INDEX),
+        Math.min(difficultyOrder.length - 1, finiteInteger(data.unlockedDifficultyIndex, DEFAULT_UNLOCKED_DIFFICULTY_INDEX)),
       ),
     );
     localStorage.setItem("orbit.progressMigrated", "1");
     localStorage.setItem("orbit.autoWave", data.autoWave ? "1" : "0");
     localStorage.setItem("orbit.muted", data.muted ? "1" : "0");
-    if (data.pendingDifficultyUnlock) localStorage.setItem("orbit.pendingDifficultyUnlock", String(data.pendingDifficultyUnlock));
-    else localStorage.removeItem("orbit.pendingDifficultyUnlock");
+    if (difficultyOrder.includes(data.pendingDifficultyUnlock)) {
+      localStorage.setItem("orbit.pendingDifficultyUnlock", data.pendingDifficultyUnlock);
+    } else {
+      localStorage.removeItem("orbit.pendingDifficultyUnlock");
+    }
 
     const importedDifficulty = difficultyOrder.includes(data.difficulty) ? data.difficulty : state.difficulty;
     state.difficulty = isDifficultyUnlocked(importedDifficulty)
@@ -720,14 +744,14 @@
 
   function getResearchLevels() {
     try {
-      return { ...DEFAULT_RESEARCH, ...JSON.parse(localStorage.getItem("orbit.researchLevels") || "{}") };
+      return normalizeResearchLevels(JSON.parse(localStorage.getItem("orbit.researchLevels") || "{}"));
     } catch (error) {
       return { ...DEFAULT_RESEARCH };
     }
   }
 
   function saveResearchLevels(levels) {
-    localStorage.setItem("orbit.researchLevels", JSON.stringify(levels));
+    localStorage.setItem("orbit.researchLevels", JSON.stringify(normalizeResearchLevels(levels)));
   }
 
   function currentResearchLevels() {
@@ -735,11 +759,11 @@
   }
 
   function researchPoints() {
-    return Number(localStorage.getItem("orbit.research") || 0);
+    return Math.max(0, finiteInteger(localStorage.getItem("orbit.research"), 0));
   }
 
   function setResearchPoints(value) {
-    localStorage.setItem("orbit.research", String(Math.max(0, Math.floor(value))));
+    localStorage.setItem("orbit.research", String(Math.max(0, finiteInteger(value, 0))));
   }
 
   function researchIconSvg(id) {
