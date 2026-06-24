@@ -7,6 +7,7 @@ const rootDir = path.resolve(__dirname, "..");
 const tests = [
   ["node", ["scripts/towerMetrics.test.js"]],
   ["node", ["scripts/gameData.validation.test.js"]],
+  ["node", ["scripts/htmlStructure.test.js"]],
   ["node", ["scripts/sync_readme_content.js", "--check"]],
 ];
 
