@@ -245,6 +245,12 @@
     return DIFFICULTY_RESEARCH_REWARD[difficulty] || 0;
   }
 
+  function campaignStageCount(difficulty = state.difficulty) {
+    const baseCampaignStageCount = Math.min(10, STAGES.length);
+    if (difficulty === "nightmare") return STAGES.length;
+    return baseCampaignStageCount;
+  }
+
   const battleOverlays = window.OrbitBattleOverlays.create({
     state,
     ui,
@@ -2307,10 +2313,11 @@
       state.victory = true;
       const previousCleared = getClearedStages();
       const cleared = Math.max(previousCleared, state.stageIndex + 1);
-      const finalStageCleared = state.stageIndex >= STAGES.length - 1;
+      const finalStageIndex = campaignStageCount(state.difficulty) - 1;
+      const finalStageCleared = state.stageIndex >= finalStageIndex;
       let unlockedDifficultyId = null;
       setClearedStages(cleared);
-      setSavedStageIndex(finalStageCleared ? state.stageIndex : state.stageIndex + 1);
+      setSavedStageIndex(finalStageCleared ? state.stageIndex : Math.min(state.stageIndex + 1, finalStageIndex));
       if (finalStageCleared) {
         const nextId = nextDifficultyId();
         if (nextId && !isDifficultyUnlocked(nextId)) {
@@ -2325,7 +2332,8 @@
       }
       window.clearTimeout(scheduleAutoWave.timer);
       state.autoWaveDueAt = 0;
-      const nextStageName = STAGES[(state.stageIndex + 1) % STAGES.length].name;
+      const nextStageIndex = finalStageCleared ? finalStageIndex : Math.min(state.stageIndex + 1, finalStageIndex);
+      const nextStageName = STAGES[nextStageIndex].name;
       const researchBanner = state.runResearchReward > 0
         ? `연구 점수 +${state.runResearchReward}. 다음 전장인 ${nextStageName} 구역으로 이동할 수 있습니다.`
         : `이미 클리어한 스테이지입니다. 연구 점수는 추가로 지급되지 않습니다. 다음 전장인 ${nextStageName} 구역으로 이동할 수 있습니다.`;
