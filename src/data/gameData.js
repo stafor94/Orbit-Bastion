@@ -271,6 +271,86 @@
         [0.55, 0.82], [0.82, 0.82],
       ],
     },
+    {
+      name: "흑요석 방벽",
+      core: 32,
+      alloy: 315,
+      waves: 10,
+      path: [
+        [-0.04, 0.16], [0.24, 0.16], [0.24, 0.34], [0.74, 0.34],
+        [0.74, 0.18], [0.92, 0.18], [0.92, 0.58], [0.34, 0.58],
+        [0.34, 0.82], [1.04, 0.82],
+      ],
+      slots: [
+        [0.16, 0.28], [0.39, 0.22], [0.56, 0.44], [0.82, 0.28],
+        [0.84, 0.48], [0.62, 0.66], [0.42, 0.7], [0.2, 0.68],
+        [0.5, 0.9], [0.76, 0.74], [0.9, 0.9],
+      ],
+    },
+    {
+      name: "균열 격납고",
+      core: 34,
+      alloy: 330,
+      waves: 10,
+      path: [
+        [0.08, -0.04], [0.08, 0.2], [0.42, 0.2], [0.42, 0.08],
+        [0.84, 0.08], [0.84, 0.42], [0.18, 0.42], [0.18, 0.66],
+        [0.68, 0.66], [0.68, 1.04],
+      ],
+      slots: [
+        [0.2, 0.1], [0.31, 0.3], [0.56, 0.18], [0.72, 0.2],
+        [0.74, 0.52], [0.54, 0.52], [0.32, 0.54], [0.12, 0.78],
+        [0.34, 0.78], [0.56, 0.8], [0.82, 0.78],
+      ],
+    },
+    {
+      name: "심야 포자림",
+      core: 34,
+      alloy: 345,
+      waves: 10,
+      path: [
+        [1.04, 0.12], [0.76, 0.12], [0.76, 0.3], [0.22, 0.3],
+        [0.22, 0.48], [0.88, 0.48], [0.88, 0.7], [0.38, 0.7],
+        [0.38, 0.9], [-0.04, 0.9],
+      ],
+      slots: [
+        [0.9, 0.24], [0.62, 0.22], [0.48, 0.38], [0.14, 0.4],
+        [0.34, 0.56], [0.62, 0.58], [0.78, 0.62], [0.72, 0.82],
+        [0.5, 0.82], [0.24, 0.78], [0.1, 0.88], [0.88, 0.86],
+      ],
+    },
+    {
+      name: "망각의 도킹베이",
+      core: 36,
+      alloy: 360,
+      waves: 10,
+      path: [
+        [0.5, 1.04], [0.5, 0.84], [0.16, 0.84], [0.16, 0.62],
+        [0.82, 0.62], [0.82, 0.4], [0.28, 0.4], [0.28, 0.18],
+        [0.72, 0.18], [0.72, -0.04],
+      ],
+      slots: [
+        [0.32, 0.92], [0.62, 0.9], [0.1, 0.74], [0.34, 0.72],
+        [0.62, 0.72], [0.9, 0.54], [0.7, 0.52], [0.46, 0.5],
+        [0.18, 0.32], [0.44, 0.28], [0.62, 0.28], [0.86, 0.2],
+      ],
+    },
+    {
+      name: "종말 궤도문",
+      core: 36,
+      alloy: 380,
+      waves: 10,
+      path: [
+        [-0.04, 0.06], [0.94, 0.06], [0.94, 0.22], [0.1, 0.22],
+        [0.1, 0.4], [0.82, 0.4], [0.82, 0.58], [0.18, 0.58],
+        [0.18, 0.78], [0.94, 0.78], [0.94, 1.04],
+      ],
+      slots: [
+        [0.2, 0.14], [0.44, 0.14], [0.72, 0.14], [0.88, 0.32],
+        [0.64, 0.32], [0.38, 0.32], [0.22, 0.5], [0.48, 0.5],
+        [0.72, 0.5], [0.34, 0.7], [0.62, 0.7], [0.84, 0.88],
+      ],
+    },
   ];
 
   const STAGE_RULES = [
@@ -357,6 +437,70 @@
         { wave: 6, type: "brute", count: 3, gap: 0.82 },
         { wave: 9, type: "skitter", count: 10, gap: 0.22 },
         { wave: 8, type: "ironclad", count: 2, gap: 1.35 },
+      ],
+    },
+    {
+      summary: "흑요석 방벽에서 중갑 선봉과 보스가 교차로를 압박합니다.",
+      rule: "중갑 선봉 강화",
+      group: { brute: 1.6, shellguard: 1.3, ironclad: 1.45, lurker: 1.35 },
+      hp: {},
+      bossCooldown: 0.55,
+      bossType: "shieldmatron",
+      extraGroups: [
+        { wave: 5, type: "shellguard", count: 2, gap: 0.9 },
+        { wave: 8, type: "ironclad", count: 2, gap: 1.25 },
+      ],
+    },
+    {
+      summary: "균열 격납고에서 고속 개체와 기생 운반체가 방어선을 흔듭니다.",
+      rule: "고속 기생 공세",
+      group: { skitter: 1.65, venomrunner: 1.55, broodcarrier: 1.35, brute: 1.45 },
+      hp: {},
+      bossCooldown: 0.52,
+      bossType: "riftbehemoth",
+      extraGroups: [
+        { wave: 6, type: "venomrunner", count: 8, gap: 0.24 },
+        { wave: 8, type: "broodcarrier", count: 2, gap: 1.1 },
+      ],
+    },
+    {
+      summary: "심야 포자림에서 보호막 군단과 유충 무리가 긴 우회로를 장악합니다.",
+      rule: "보호막 군단 증폭",
+      group: { swarming: 1.75, shellguard: 1.45, lurker: 1.45, broodcarrier: 1.4, ironclad: 1.4 },
+      hp: {},
+      bossCooldown: 0.5,
+      bossType: "shieldmatron",
+      extraGroups: [
+        { wave: 5, type: "swarming", count: 14, gap: 0.13 },
+        { wave: 7, type: "shellguard", count: 3, gap: 0.85 },
+        { wave: 9, type: "broodcarrier", count: 2, gap: 1.0 },
+      ],
+    },
+    {
+      summary: "망각의 도킹베이에서 전 구간에 걸쳐 중무장 균열 병력이 역류합니다.",
+      rule: "역류 공세",
+      group: { skitter: 1.7, venomrunner: 1.65, brute: 1.65, shellguard: 1.55, ironclad: 1.55 },
+      hp: {},
+      bossCooldown: 0.48,
+      bossType: "riftbehemoth",
+      extraGroups: [
+        { wave: 6, type: "brute", count: 4, gap: 0.74 },
+        { wave: 8, type: "ironclad", count: 3, gap: 1.18 },
+        { wave: 9, type: "venomrunner", count: 10, gap: 0.2 },
+      ],
+    },
+    {
+      summary: "종말 궤도문에서 모든 강화 개체와 보스가 마지막 관문으로 쇄도합니다.",
+      rule: "악몽 총력전",
+      group: { swarming: 1.85, skitter: 1.75, venomrunner: 1.7, brute: 1.75, shellguard: 1.6, broodcarrier: 1.5, ironclad: 1.65 },
+      hp: {},
+      bossCooldown: 0.45,
+      bossType: "riftbehemoth",
+      extraGroups: [
+        { wave: 5, type: "swarming", count: 16, gap: 0.12 },
+        { wave: 7, type: "shellguard", count: 4, gap: 0.78 },
+        { wave: 8, type: "ironclad", count: 3, gap: 1.1 },
+        { wave: 9, type: "broodcarrier", count: 3, gap: 0.95 },
       ],
     },
   ];
