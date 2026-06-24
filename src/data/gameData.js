@@ -359,6 +359,73 @@
         { wave: 8, type: "ironclad", count: 2, gap: 1.35 },
       ],
     },
+    {
+      summary: "차원 균열 잔광 속에서 고속 돌파 개체와 갑각 호위가 교대로 밀려옵니다.",
+      rule: "균열 선봉대",
+      group: { venomrunner: 1.45, skitter: 1.35, shellguard: 1.2, lurker: 1.2 },
+      hp: { venomrunner: 1.12, shellguard: 1.08 },
+      bossCooldown: 0.54,
+      bossType: "riftbehemoth",
+      extraGroups: [
+        { wave: 6, type: "venomrunner", count: 6, gap: 0.36 },
+        { wave: 8, type: "shellguard", count: 2, gap: 1.2 },
+      ],
+    },
+    {
+      summary: "재생 보호막을 앞세운 호위 병력이 전선을 천천히 잠식합니다.",
+      rule: "매트론 호위진",
+      group: { shellguard: 1.45, broodcarrier: 1.25, brute: 1.3, swarming: 1.25 },
+      hp: { shellguard: 1.16, broodcarrier: 1.12 },
+      bossCooldown: 0.5,
+      bossType: "shieldmatron",
+      extraGroups: [
+        { wave: 5, type: "swarming", count: 14, gap: 0.13 },
+        { wave: 7, type: "shellguard", count: 2, gap: 1.15 },
+        { wave: 9, type: "broodcarrier", count: 2, gap: 0.9 },
+      ],
+    },
+    {
+      summary: "철갑 거체와 기생 고치가 좁은 진입로를 봉쇄하듯 전진합니다.",
+      rule: "철갑 포위망",
+      group: { ironclad: 1.55, broodcarrier: 1.35, brute: 1.4, lurker: 1.25 },
+      hp: { ironclad: 1.18, broodcarrier: 1.14 },
+      bossCooldown: 0.48,
+      bossType: "colossus",
+      extraGroups: [
+        { wave: 6, type: "brute", count: 3, gap: 0.78 },
+        { wave: 8, type: "ironclad", count: 2, gap: 1.25 },
+        { wave: 10, type: "broodcarrier", count: 3, gap: 0.82 },
+      ],
+    },
+    {
+      summary: "심층 군락의 혼성 병력이 빠른 습격과 중장 압박을 동시에 전개합니다.",
+      rule: "심층 혼성군",
+      group: { swarming: 1.75, skitter: 1.6, venomrunner: 1.5, shellguard: 1.35, ironclad: 1.4 },
+      hp: { venomrunner: 1.15, shellguard: 1.14, ironclad: 1.12 },
+      bossCooldown: 0.44,
+      bossType: "shieldmatron",
+      extraGroups: [
+        { wave: 5, type: "skitter", count: 12, gap: 0.2 },
+        { wave: 7, type: "venomrunner", count: 8, gap: 0.32 },
+        { wave: 9, type: "shellguard", count: 3, gap: 1.05 },
+        { wave: 10, type: "ironclad", count: 2, gap: 1.18 },
+      ],
+    },
+    {
+      summary: "강화된 균열 베히모스가 모든 군체를 끌어모아 마지막 방어선을 시험합니다.",
+      rule: "강화 베히모스 재림",
+      group: { swarming: 1.9, skitter: 1.7, venomrunner: 1.65, brute: 1.65, shellguard: 1.5, broodcarrier: 1.45, ironclad: 1.5 },
+      hp: { riftbehemoth: 1.28, ironclad: 1.2, shellguard: 1.18, broodcarrier: 1.16 },
+      bossCooldown: 0.4,
+      bossType: "riftbehemoth",
+      extraGroups: [
+        { wave: 5, type: "swarming", count: 18, gap: 0.11 },
+        { wave: 6, type: "venomrunner", count: 10, gap: 0.28 },
+        { wave: 8, type: "brute", count: 4, gap: 0.72 },
+        { wave: 9, type: "ironclad", count: 3, gap: 1.05 },
+        { wave: 10, type: "riftbehemoth", count: 1, gap: 0.15 },
+      ],
+    },
   ];
 
   const RESEARCH_DEFS = [
