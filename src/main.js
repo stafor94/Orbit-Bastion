@@ -292,21 +292,20 @@
     openResultScreen,
   } = battleOverlays;
 
-  function visibleStageCount(difficulty = state.difficulty) {
-    const stageCount = difficulty === "nightmare" ? STAGES.length : BASE_STAGE_COUNT;
-    return Math.max(1, Math.min(STAGES.length, stageCount));
+  function campaignStageCount(difficulty = state.difficulty) {
+    return difficulty === "nightmare" ? STAGES.length : Math.min(10, STAGES.length);
   }
 
   function clampDifficultyStageIndex(value, difficulty = state.difficulty) {
-    return Math.max(0, Math.min(visibleStageCount(difficulty) - 1, Number(value) || 0));
+    return Math.max(0, Math.min(campaignStageCount(difficulty) - 1, Number(value) || 0));
   }
 
   function getClearedStages(difficulty = state.difficulty) {
-    return Math.max(0, Math.min(visibleStageCount(difficulty), Number(localStorage.getItem(difficultyProgressKey("cleared", difficulty)) || 0)));
+    return Math.max(0, Math.min(campaignStageCount(difficulty), Number(localStorage.getItem(difficultyProgressKey("cleared", difficulty)) || 0)));
   }
 
   function setClearedStages(value, difficulty = state.difficulty) {
-    localStorage.setItem(difficultyProgressKey("cleared", difficulty), String(Math.max(0, Math.min(visibleStageCount(difficulty), Math.floor(value)))));
+    localStorage.setItem(difficultyProgressKey("cleared", difficulty), String(Math.max(0, Math.min(campaignStageCount(difficulty), Math.floor(value)))));
   }
 
   function getSavedStageIndex(difficulty = state.difficulty) {
@@ -2312,9 +2311,9 @@
     state.waveIndex += 1;
     if (state.waveIndex >= state.waves.length) {
       state.victory = true;
+      const stageCount = campaignStageCount();
       const previousCleared = getClearedStages();
       const cleared = Math.max(previousCleared, state.stageIndex + 1);
-      const stageCount = visibleStageCount();
       const finalStageCleared = state.stageIndex >= stageCount - 1;
       let unlockedDifficultyId = null;
       setClearedStages(cleared);
@@ -2379,7 +2378,7 @@
     confirmProgressReset: () => confirmProgressReset(),
     exportSaveBackup: () => exportSaveBackup(),
     getClearedStages: (difficulty) => getClearedStages(difficulty),
-    visibleStageCount: (difficulty) => visibleStageCount(difficulty),
+    campaignStageCount: (difficulty) => campaignStageCount(difficulty),
     importSaveBackup: () => importSaveBackup(),
     isDifficultyUnlocked: (difficultyId) => isDifficultyUnlocked(difficultyId),
     applyDifficultyChoice: (difficultyId) => applyDifficultyChoice(difficultyId),

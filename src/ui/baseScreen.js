@@ -17,7 +17,7 @@
       confirmProgressReset,
       exportSaveBackup,
       getClearedStages,
-      visibleStageCount,
+      campaignStageCount,
       importSaveBackup,
       isDifficultyUnlocked,
       applyDifficultyChoice,
@@ -67,8 +67,9 @@
 
     function openBaseScreen() {
       state.screen = "base";
-      const stageCount = visibleStageCount();
-      const cleared = getClearedStages();
+      const stageCount = campaignStageCount(state.difficulty);
+      const cleared = Math.min(getClearedStages(), stageCount);
+      const visibleStages = STAGES.slice(0, stageCount);
       const research = researchPoints();
       ui.overlay.classList.add("active");
       ui.overlay.innerHTML = `
@@ -91,7 +92,7 @@
           <button id="openDifficultyButton" type="button">난이도 변경</button>
           <div class="stage-scroll">
             <div class="stage-list">
-              ${STAGES.slice(0, stageCount).map((stage, index) => {
+              ${visibleStages.map((stage, index) => {
                 const locked = index > cleared;
                 const status = index < cleared ? "확보" : index === cleared ? "출격" : "잠금";
                 return `
