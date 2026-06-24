@@ -24,6 +24,7 @@
       openBaseScreen,
       resetStage,
       closeOverlay,
+      visibleStageCount,
       selectTacticalSkill,
       useInstantTacticalSkill,
     } = deps;
@@ -142,7 +143,7 @@
       });
       ui.reset.addEventListener("click", () => {
         playSound("click");
-        const next = state.victory ? Math.min(state.stageIndex + 1, STAGES.length - 1) : state.stageIndex;
+        const next = state.victory ? Math.min(state.stageIndex + 1, visibleStageCount() - 1) : state.stageIndex;
         resetStage(next);
         closeOverlay();
       });

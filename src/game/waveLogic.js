@@ -56,19 +56,19 @@
     }
 
     function stageWaveGrowthScale(stageIndex) {
-      const scales = [0.72, 0.78, 0.84, 0.9, 0.94, 0.97];
+      const scales = [0.72, 0.78, 0.84, 0.9, 0.94, 0.97, 1, 1.02, 1.03, 1.04, 1.04, 1.05, 1.06, 1.07, 1.08];
       if (stageIndex < 0) return scales[0];
-      return stageIndex < scales.length ? scales[stageIndex] : 1;
+      return stageIndex < scales.length ? scales[stageIndex] : scales.at(-1);
     }
 
     function stageEnemyMix(stageIndex) {
-      const skitterStart = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4];
-      const bruteStart = [99, 7, 6, 6, 6, 6, 6, 6, 6, 6];
-      const venomrunnerStart = [99, 99, 99, 8, 7, 7, 6, 6, 5, 5];
-      const swarmingStart = [99, 99, 99, 8, 6, 7, 7, 7, 8, 8];
-      const shellguardStart = [99, 99, 99, 99, 99, 8, 8, 7, 7, 6];
-      const broodcarrierStart = [99, 99, 99, 99, 8, 8, 8, 8, 9, 9];
-      const ironcladStart = [99, 99, 99, 99, 99, 99, 99, 99, 8, 7];
+      const skitterStart = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3];
+      const bruteStart = [99, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5];
+      const venomrunnerStart = [99, 99, 99, 8, 7, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4];
+      const swarmingStart = [99, 99, 99, 8, 6, 7, 7, 7, 8, 8, 7, 7, 7, 6, 6];
+      const shellguardStart = [99, 99, 99, 99, 99, 8, 8, 7, 7, 6, 6, 6, 5, 5, 5];
+      const broodcarrierStart = [99, 99, 99, 99, 8, 8, 8, 8, 9, 9, 7, 7, 6, 6, 6];
+      const ironcladStart = [99, 99, 99, 99, 99, 99, 99, 99, 8, 7, 7, 7, 6, 6, 6];
       const index = Math.max(0, Math.min(stageIndex, skitterStart.length - 1));
       return {
         skitterStart: skitterStart[index],
